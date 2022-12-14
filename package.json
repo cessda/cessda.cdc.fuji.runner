@@ -1,5 +1,5 @@
 {
-  "name": "cessda.cdc.fujiapiconnector.git",
+  "name": "cessda.cdc.fuji.runner",
   "version": "1.0.0",
   "description": "FujiApiConnector for CDC FAIR assessment",
   "main": "src/fujiApi.js",
