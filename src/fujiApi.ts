@@ -180,7 +180,7 @@ async function apiLoop(link: string, fullDate: string): Promise<JSON> {
         fujiResults['dateID'] = "FujiRun-" + fullDate;
 
         resultsToElastic(fileName, fujiResults).then(()=>{
-          //resultsToHDD(fileName, fujiResults); //Write-to-HDD-localhost function
+        //resultsToHDD(fileName, fujiResults); //Write-to-HDD-localhost function
         //uploadFromMemory(fileName, fujiResults).catch(console.error); //Write-to-Cloud-Bucket function
         })
 
