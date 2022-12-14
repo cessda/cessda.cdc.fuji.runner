@@ -61,3 +61,6 @@ nbdist/
 .nb-gradle/
 .vscode/
 bin/
+
+### NetBeans ###
+node_modules
