@@ -62,5 +62,5 @@ nbdist/
 .vscode/
 bin/
 
-### NetBeans ###
+### Node Modules ###
 node_modules
