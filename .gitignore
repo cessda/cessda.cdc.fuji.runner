@@ -6,6 +6,7 @@
 *.exe
 *.o
 *.so
+fujiApi.js
 
 # Packages #
 ############
@@ -61,3 +62,6 @@ nbdist/
 .nb-gradle/
 .vscode/
 bin/
+
+### Node Modules ###
+node_modules
