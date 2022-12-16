@@ -223,7 +223,6 @@ async function resultsToElastic(fileName: string, fujiResults: JSON) {
       }
     }
     await client.index(elasticdoc)
-    await client.indices.refresh({ index: 'fuji-results' })
     logger.info(`inserted in ES: ${fileName}`);
   }
   catch (error) {
