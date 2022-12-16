@@ -11,39 +11,44 @@
 [![Technical Debt](https://sonarqube.cessda.eu/api/project_badges/measure?project=eu.cessda.cdc.fuji.runner%3fuji-runner&metric=sqale_index)](https://sonarqube.cessda.eu/dashboard?id=eu.cessda.cdc.fuji.runner%3fuji-runner)
 [![Vulnerabilities](https://sonarqube.cessda.eu/api/project_badges/measure?project=eu.cessda.cdc.fuji.runner%3fuji-runner&metric=vulnerabilities)](https://sonarqube.cessda.eu/dashboard?id=eu.cessda.cdc.fuji.runner%3fuji-runner)
 
-# CESSDA Metadata Validator: Command Line Runner
+# CESSDA Data Catalogue: F-UJI Bulk Analysis Program
 
-This repository contains the source code for  ...
+This repository contains the source code for the F-UJI Bulk Analysis Program.
 
 ## Prerequisites
 
-Java XX or greater is required to build and run this application.
+Node 18 or higher is required to run this application.
 
 ## Quick Start
 
 1. Check prerequisites and install any required software.
 2. Clone the repository to your local workspace.
-3. Build the application using `.\mvnw clean verify`.
-4. Run the application using the following command: `.\mvnw exec:java`.
+3. Run the application using the following command: `npm start`.
 
 ## Project Structure
 
-This project uses the standard Maven project structure.
+This project uses the standard NPM project structure.
 
-```
+```text
 <ROOT>
-├── .mvn                # Maven wrapper.
-├── src                 # Contains all source code and assets for the application.
-|   ├── main
-|   |   ├── java        # Contains release source code of the application.
-|   |   └── resources   # Contains release resources assets.
-|   └── test
-|       ├── java        # Contains test source code.
-|       └── resources   # Contains test resource assets.
-└── target              # The output directory for the build.
+├── node_modules        # Third party packages and dependencies.
+└── src                 # Contains all source code and assets for the application.
 ```
 
 ## Technology Stack
+
+Several frameworks are used in this application.
+
+The primary programming language is Flow and JSX in ECMAScript 6. See *Tooling* (below) for compatible IDEs.
+
+| Framework/Technology                                  | Description                                              |
+| ----------------------------------------------------- | -------------------------------------------------------- |
+| [Elasticsearch](https://www.elastic.co/elasticsearch/)| Distributed, RESTful search engine and database          |
+| [F-UJI](https://www.f-uji.net/)                       | REST API to assess FAIRness of research data objects     |
+| [TypeScript](https://www.typescriptlang.org/)         | Static type checker for JavaScript.                      |
+| [Winston](https://github.com/winstonjs/winston)       | JavaScript logging framework.                            |
+
+See [`package.json`](package.json) in the root directory for a full list of third party libraries used.
 
 ## Configuration
 
