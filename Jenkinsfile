@@ -58,7 +58,7 @@ pipeline {
 				}
 				waitForQualityGate abortPipeline: true
 			}
-			// when { branch 'master' } - testing
+			when { branch 'main' }
 		}
 		//
 		// No Dockerfile yet
