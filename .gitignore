@@ -65,3 +65,7 @@ bin/
 
 ### Node Modules ###
 node_modules
+
+### Outputs ###
+outputs/*
+!outputs/.gitkeep
