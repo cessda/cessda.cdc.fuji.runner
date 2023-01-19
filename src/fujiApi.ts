@@ -96,7 +96,7 @@ async function fujiMetrics() {
       input.push(data);
     }
     input.push(null);
-    const outputLocal = createWriteStream(`../runResults/CSV_DATA_${fullDate}.csv`, { encoding: 'utf8' });
+    const outputLocal = createWriteStream(`../outputs/CSV_DATA_${fullDate}.csv`, { encoding: 'utf8' });
     const fields = [
       'request.object_identifier', 
       'summary.score_percent.A',
@@ -181,7 +181,7 @@ async function apiLoop(link: string, fullDate: string): Promise<JSON | undefined
     fujiResults['dateID'] = "FujiRun-" + fullDate;
 
     await resultsToElastic(fileName, fujiResults);
-    //resultsToHDD(fileName, fujiResults); //Write-to-HDD-localhost function
+    resultsToHDD(fileName, fujiResults); //Write-to-HDD-localhost function
     //uploadFromMemory(fileName, fujiResults).catch(console.error); //Write-to-Cloud-Bucket function
 
     return fujiResults;
@@ -241,7 +241,7 @@ async function uploadFromMemory(fileName: string, fujiResults: Buffer) {
 }
 
 function resultsToHDD(fileName: string, fujiResults: JSON) {
-  writeFile(`../runResults/${fileName}`, JSON.stringify(fujiResults, null, 4), (err) => {
+  writeFile(`../outputs/${fileName}`, JSON.stringify(fujiResults, null, 4), (err) => {
     if (err)
       logger.error(`Error writing to file: ${err}`);
     else {
