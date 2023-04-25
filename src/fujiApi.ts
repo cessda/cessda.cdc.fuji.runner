@@ -9,6 +9,8 @@ import fetch from 'node-fetch'
 import { Transform } from "json2csv";
 import { Readable } from 'stream';
 import { parseAsync } from "json2csv";
+import * as dotenv from 'dotenv'
+dotenv.config({ path: '../.env' })
 
 const logLevel = process.env['SEARCHKIT_LOG_LEVEL'] || 'info';
 function loggerFormat() {
@@ -73,11 +75,23 @@ const storage = new Storage(); //localhost test auth
 const bucketName = 'cessda-fuji-storage-dev';
 
 async function fujiMetrics() {
+  const cdcusername = process.env['CDC_USERNAME'];
+  const cdcpassword = process.env['CDC_PASSWORD'];
+
+  const usernamePasswordBuffer = Buffer.from(
+    `${cdcusername}:${cdcpassword}`,
+    "utf-8"
+  );
+  const base64UsernamePassword = usernamePasswordBuffer.toString("base64");
+  const requestHeaders = {
+    Authorization: `Basic ${base64UsernamePassword}`,
+  };
   const cdcLinks = new Sitemapper({
-    url: 'https://datacatalogue.cessda.eu/sitemap_index.xml',
+    url: 'https://datacatalogue-staging.cessda.eu/sitemap_index.xml',
     timeout: 15000, // 15 seconds
     debug: true,
     retries: 1,
+    requestHeaders
   });
   
   try {
@@ -92,7 +106,7 @@ async function fujiMetrics() {
     input._read = () => {};
     //const arrayTests = sites.slice(0, 5); //DEBUG CODE FOR TESTS - REDUCE ARRAY TO 5 STUDIES!!!!!!!!!!!!!!!!!!
     for (const site of sites) {
-      const data = await apiLoop(site, fullDate);
+      const data = await apiLoop(site.replace('-staging',''), fullDate, requestHeaders);
       input.push(data);
     }
     input.push(null);
@@ -137,14 +151,14 @@ async function fujiMetrics() {
   logger.info('Script Ended');
 };
 
-async function apiLoop(link: string, fullDate: string): Promise<JSON | undefined> {
+async function apiLoop(link: string, fullDate: string, requestHeaders: { Authorization: string; }): Promise<JSON | undefined> {
   const urlLink = new URL(link);
   const urlParams = urlLink.searchParams;
   const fileName = urlParams.get('q') + "-" + urlParams.get('lang') + "-" + fullDate + ".json";
   logger.info(`\n`);
   logger.info(`Name: ${fileName}`);
-  const cdcApiUrl = 'https://datacatalogue.cessda.eu/api/json/cmmstudy_' + urlParams.get('lang') + '/' + urlParams.get('q');
-  const response = await fetch(cdcApiUrl);
+  const cdcApiUrl = 'https://datacatalogue-staging.cessda.eu/api/json/cmmstudy_' + urlParams.get('lang') + '/' + urlParams.get('q');
+  const response = await fetch(cdcApiUrl, {method:'GET', headers: requestHeaders });
   const data = await response.json() as any;
   const publisher = data.publisherFilter.publisher;
 
@@ -157,8 +171,8 @@ async function apiLoop(link: string, fullDate: string): Promise<JSON | undefined
       "use_datacite": true
     }, {
       auth: {
-        username: "wallice",
-        password: "grommit"
+        username: process.env['FUJI_USERNAME']!,
+        password: process.env['FUJI_PASSWORD']!
       }
     });
 

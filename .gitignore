@@ -69,3 +69,6 @@ node_modules
 ### Outputs ###
 outputs/*
 !outputs/.gitkeep
+
+### ENV ###
+.env

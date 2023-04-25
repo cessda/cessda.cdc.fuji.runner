@@ -26,6 +26,7 @@
     "@types/elasticsearch": "^5.0.40",
     "@types/node-fetch": "^2.6.2",
     "axios": "^1.2.0",
+    "dotenv": "^16.0.3",
     "json2csv": "^5.0.7",
     "node-fetch": "^2.6.7",
     "sitemapper": "^3.2.6",
