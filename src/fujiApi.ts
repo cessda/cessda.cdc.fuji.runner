@@ -101,10 +101,16 @@ async function fujiMetrics() {
     const fullDate = [runDate.getFullYear(), runDate.getMonth()+1, runDate.getDate(), runDate.getHours(), runDate.getMinutes(), runDate.getSeconds()].join('-');
     const { sites } = await cdcLinks.fetch();
     sites.shift(); //remove 1st element - https://datacatalogue.cessda.eu/
+     /*  DEBUG CODE FOR TESTS
+    const arrayTests = sites.slice(0, 5);
+    const sites = ["https://datacatalogue-staging.cessda.eu/detail?lang=en&q=5b6b6fc079ea7f82337bcff575874ebe2be3615232c7e88dbe27b800e013b19a", 
+    "https://datacatalogue-staging.cessda.eu/detail?lang=en&q=91e182b931b0fbc4f63d1f0e4c53a151ae7066095cf4a172f8d53823286f64f5", 
+    "https://datacatalogue-staging.cessda.eu/detail?lang=en&q=4088b401cc9a5ab685083e2c915704a64a55052456c371d7937818f714c2d9b4"];
+    */
     logger.info(`Links Collected: ${sites.length}`);
     const input = new Readable({ objectMode: true }); //initiating CSV writer
     input._read = () => {};
-    //const arrayTests = sites.slice(0, 5); //DEBUG CODE FOR TESTS - REDUCE ARRAY TO 5 STUDIES!!!!!!!!!!!!!!!!!!
+    
     for (const site of sites) {
       const data = await apiLoop(site.replace('-staging',''), fullDate, requestHeaders);
       input.push(data);
@@ -159,8 +165,8 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
   logger.info(`Name: ${fileName}`);
   const cdcApiUrl = 'https://datacatalogue-staging.cessda.eu/api/json/cmmstudy_' + urlParams.get('lang') + '/' + urlParams.get('q');
   const response = await fetch(cdcApiUrl, {method:'GET', headers: requestHeaders });
-  const data = await response.json() as any;
-  const publisher = data.publisherFilter.publisher;
+  const data = await response.json() as any; 
+  const publisher = data.error ? "NULL PUBLISHER" : data.publisherFilter.publisher;
 
   try {
     const res = await axios.post('http://34.107.135.203/fuji/api/v1/evaluate', {
