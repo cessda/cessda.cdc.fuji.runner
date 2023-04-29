@@ -1,14 +1,15 @@
-import Sitemapper from 'sitemapper';
-import axios from 'axios';
+import Sitemapper, { type SitemapperResponse } from 'sitemapper';
+import axios, { type AxiosResponse } from 'axios';
 import winston from 'winston';
+import { dashLogger } from "./logger.js";
 import { URL } from 'url';
 import { Storage } from '@google-cloud/storage';
-import { Client, RequestParams } from '@elastic/elasticsearch'
+import { Client } from '@elastic/elasticsearch'
 import { createWriteStream, writeFile } from 'fs';
-import fetch from 'node-fetch'
+import fetch, { Response } from 'node-fetch'
 import { Transform } from "json2csv";
-import { Readable } from 'stream';
 import { parseAsync } from "json2csv";
+import { Readable } from 'stream';
 import * as dotenv from 'dotenv'
 dotenv.config({ path: '../.env' })
 
@@ -93,69 +94,72 @@ async function fujiMetrics() {
     retries: 1,
     requestHeaders
   });
-  
-  try {
-    await elasticIndexCheck(); //creates index if it doesnt exist, skips creating if it does exist
-    const runDate = new Date();
-    //const fullDate =  runDate.toISOString();
-    const fullDate = [runDate.getFullYear(), runDate.getMonth()+1, runDate.getDate(), runDate.getHours(), runDate.getMinutes(), runDate.getSeconds()].join('-');
-    const { sites } = await cdcLinks.fetch();
-    sites.shift(); //remove 1st element - https://datacatalogue.cessda.eu/
-    /*  //DEBUG CODE FOR TESTS
-    //const arrayTests = sites.slice(0, 5);
-    const sites = [
-      "https://datacatalogue-staging.cessda.eu/detail?lang=en&q=5b6b6fc079ea7f82337bcff575874ebe2be3615232c7e88dbe27b800e013b19a", 
-      "https://datacatalogue-staging.cessda.eu/detail?lang=de&q=14e399fbce890d4c14b1eb6f33bf9255edeebb2e95cebd8cf741aacb3b9cabe8", 
-      "https://datacatalogue-staging.cessda.eu/detail?lang=en&q=4088b401cc9a5ab685083e2c915704a64a55052456c371d7937818f714c2d9b4"
-    ];
-    */
-    logger.info(`Links Collected: ${sites.length}`);
-    const input = new Readable({ objectMode: true }); //initiating CSV writer
-    input._read = () => {};
-    
-    for (const site of sites) {
-      const data = await apiLoop(site.replace('-staging',''), fullDate, requestHeaders);
-      input.push(data);
-    }
-    input.push(null);
-    const outputLocal = createWriteStream(`../outputs/CSV_DATA_${fullDate}.csv`, { encoding: 'utf8' });
-    const fields = [
-      'request.object_identifier', 
-      'summary.score_percent.A',
-      'summary.score_percent.A1',
-      'summary.score_percent.F',
-      'summary.score_percent.F1',
-      'summary.score_percent.F2',
-      'summary.score_percent.F3',
-      'summary.score_percent.F4',
-      'summary.score_percent.FAIR',
-      'summary.score_percent.I',
-      'summary.score_percent.I1',
-      'summary.score_percent.I2',
-      'summary.score_percent.I3',
-      'summary.score_percent.R',
-      "summary.score_percent.R1",
-      'summary.score_percent.R1_1',
-      'summary.score_percent.R1_2',
-      'summary.score_percent.R1_3', 
-      'timestamp', 
-      'publisher'
-    ];
-    const opts = { fields };
-    const transformOpts = { objectMode: true };
-    const json2csv = new Transform(opts, transformOpts);
-    const processor = input.pipe(json2csv).pipe(outputLocal);
-    try {
-      await parseAsync(processor, opts);
-    } catch (err) {
-      logger.error(`CSV writer Error: ${err}`)
-    }
-  } catch (error) {
-    console.log(`Runner API Error: ${error}`);
-    logger.error(`Runner API Error: ${error}`);
-  } finally {
-    logger.info('Finished API loop function');
+  //Start Execution
+  await elasticIndexCheck(); //creates ES index if it doesnt exist, skips creating if it does exist
+  const runDate = new Date();
+  //const fullDate =  runDate.toISOString();
+  const fullDate = [runDate.getFullYear(), runDate.getMonth() + 1, runDate.getDate(), runDate.getHours(), runDate.getMinutes(), runDate.getSeconds()].join('-');
+  let sitemapRes: SitemapperResponse | undefined;
+  try{
+    sitemapRes = await cdcLinks.fetch();
   }
+  catch(error){
+    logger.error(`Error at sitemapper fetch: ${error}`);
+    dashLogger.error(`Error at sitemapper fetch: ${error} Sitemapper Error: ${sitemapRes?.errors}`);
+    return;
+  }
+  /*  //DEBUG CODE FOR TESTS
+  //const arrayTests = sites.slice(0, 5);
+  const sites = [
+    "https://datacatalogue-staging.cessda.eu/detail?lang=en&q=5b6b6fc079ea7f82337bcff575874ebe2be3615232c7e88dbe27b800e013b19a",
+    "https://datacatalogue-staging.cessda.eu/detail?lang=en&q=5b6b6fc079ea7f82337bcff575878ebe2be3615232c7e88dbe27b800e013b19a", //not exists
+    "https://datacatalogue-staging.cessda.eu/detail?lang=de&q=14e399fbce890d4c14b1eb6f33bf9255edeebb2e95cebd8cf741aacb3b9cabe8", 
+    "https://datacatalogue-staging.cessda.eu/detail?lang=en&q=4088b401cc9a5ab685083e2c915704a64a55052456c371d7937818f714c2d9b4" //not exists
+  ];
+  */
+  sitemapRes.sites.shift(); //remove 1st element - https://datacatalogue.cessda.eu/
+  logger.info(`Links Collected: ${sitemapRes.sites.length}`);
+  const input = new Readable({ objectMode: true }); //initiating CSV writer
+  input._read = () => { };
+  // Begin API Loop for studies fetched 
+  for (const site of sitemapRes.sites) {
+    const data = await apiLoop(site.replace('-staging', ''), fullDate, requestHeaders);
+    input.push(data);
+  }
+  input.push(null);
+  const outputLocal = createWriteStream(`../outputs/CSV_DATA_${fullDate}.csv`, { encoding: 'utf8' });
+  const fields = [
+    'request.object_identifier',
+    'summary.score_percent.A',
+    'summary.score_percent.A1',
+    'summary.score_percent.F',
+    'summary.score_percent.F1',
+    'summary.score_percent.F2',
+    'summary.score_percent.F3',
+    'summary.score_percent.F4',
+    'summary.score_percent.FAIR',
+    'summary.score_percent.I',
+    'summary.score_percent.I1',
+    'summary.score_percent.I2',
+    'summary.score_percent.I3',
+    'summary.score_percent.R',
+    "summary.score_percent.R1",
+    'summary.score_percent.R1_1',
+    'summary.score_percent.R1_2',
+    'summary.score_percent.R1_3',
+    'timestamp',
+    'publisher'
+  ];
+  const opts = { fields };
+  const transformOpts = { objectMode: true };
+  const json2csv = new Transform(opts, transformOpts);
+  const processor = input.pipe(json2csv).pipe(outputLocal);
+  try {
+    await parseAsync(processor, opts);
+  } catch (err) {
+    logger.error(`CSV writer Error: ${err}`)
+  }
+  logger.info('Finished API loop function');
   logger.info('Script Ended');
 };
 
@@ -166,18 +170,24 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
   logger.info(`\n`);
   logger.info(`Name: ${fileName}`);
   const cdcApiUrl = 'https://datacatalogue-staging.cessda.eu/api/json/cmmstudy_' + urlParams.get('lang') + '/' + urlParams.get('q');
-  const response = await fetch(cdcApiUrl, {method:'GET', headers: requestHeaders });
-  const data = await response.json() as any;
-  if (!response.ok) {
-    // get error message from body or default to response status
-    const error = (data && data.message) || response.status;
-    return Promise.reject(error);
+  let response: Response | undefined;
+  let data: any
+  let publisher: string | undefined;
+  try{
+    response = await fetch(cdcApiUrl, { method: 'GET', headers: requestHeaders });
+    data = await response?.json() as any;
+    publisher = data.publisherFilter.publisher;
   }
-  const publisher = data.publisherFilter.publisher;
-  //const publisher = data.error ? "NULL PUBLISHER" : data.publisherFilter.publisher;
-
+  catch(error){
+    logger.error(`Error at CDC Internal API Fetch: ${error}`);
+    dashLogger.error(`Error at CDC Internal API Fetch: ${error}, Response Status: ${response?.status}, URL:${cdcApiUrl}`);
+    publisher = "NOT-FETCHED-PUBLISHER"
+  }
+  
+  let res: AxiosResponse<any, any>;
+  let fujiResults: any | undefined;
   try {
-    const res = await axios.post('http://34.107.135.203/fuji/api/v1/evaluate', {
+      res = await axios.post('http://34.107.135.203/fuji/api/v1/evaluate', {
       "metadata_service_endpoint": "",
       "metadata_service_type": "",
       "object_identifier": link,
@@ -189,9 +199,9 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
         password: process.env['FUJI_PASSWORD']!
       }
     });
-
-    logger.info(`statusCode: ${res.status}`);
-    const fujiResults = res.data;
+    logger.info(`FujiAPI statusCode: ${res.status}`);
+    fujiResults = res.data;
+    //Delete scores and logs from response that are not needed
     delete fujiResults['results'];
     delete fujiResults.summary.maturity;
     delete fujiResults.summary.score_earned;
@@ -208,16 +218,22 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
     fujiResults['uid'] = urlParams.get('q') + "-" + urlParams.get('lang') + "-" + fullDate;
     fujiResults['dateID'] = "FujiRun-" + fullDate;
 
+    //save data to ES and/or localFiles/CloudBucket
     await resultsToElastic(fileName, fujiResults);
     resultsToHDD(fileName, fujiResults); //Write-to-HDD-localhost function
     //uploadFromMemory(fileName, fujiResults).catch(console.error); //Write-to-Cloud-Bucket function
-
-    return fujiResults;
-  } catch (error) {
-    console.error(`FuJI API Error: ${error}`);
-    logger.error(`FuJI API Error: ${error}`);
-    return undefined;
   }
+  catch (error) {
+    if (axios.isAxiosError(error)) {
+      logger.error(`AxiosError at FujiAPI: ${error.message}`);
+      dashLogger.error(`AxiosError at FujiAPI: ${error.message}, URL:${link}`);
+    } 
+    else {
+      logger.error(`Error at FujiAPI: ${error}`);
+      dashLogger.error(`Error at FujiAPI: ${error}, URL:${link}`);
+    }
+  }
+  return fujiResults;
 } //END apiLoop function
 
 async function elasticIndexCheck() {
@@ -241,7 +257,7 @@ async function elasticIndexCheck() {
 
 async function resultsToElastic(fileName: string, fujiResults: JSON) {
   try {
-    const elasticdoc: RequestParams.Index = {
+    const elasticdoc = {
       index: 'fuji-results',
       id: fileName,
       body: {
@@ -253,6 +269,7 @@ async function resultsToElastic(fileName: string, fujiResults: JSON) {
   }
   catch (error) {
     logger.error(`error in insert to ES: ${error}`);
+    dashLogger.error(`error in insert to ES: ${error}`);
   }
 }
 
