@@ -1,7 +1,6 @@
 import Sitemapper, { type SitemapperResponse } from 'sitemapper';
 import axios, { type AxiosResponse } from 'axios';
-import winston from 'winston';
-import { dashLogger } from "./logger.js";
+import { dashLogger, logger } from "./logger.js";
 import { URL } from 'url';
 import { Storage } from '@google-cloud/storage';
 import { Client } from '@elastic/elasticsearch'
@@ -12,33 +11,6 @@ import { parseAsync } from "json2csv";
 import { Readable } from 'stream';
 import * as dotenv from 'dotenv'
 dotenv.config({ path: '../.env' })
-
-const logLevel = process.env['SEARCHKIT_LOG_LEVEL'] || 'info';
-function loggerFormat() {
-  if (process.env['SEARCHKIT_USE_JSON_LOGGING'] === 'true') {
-    return winston.format.json();
-  } else {
-    return winston.format.printf(
-      ({ level, message, timestamp }) => `[${timestamp}][${level}] ${message}`
-    );
-  }
-}
-
-// Logger
-const logger = winston.createLogger({
-  level: logLevel,
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.splat(),
-    loggerFormat()
-  ),
-  transports: [
-    new winston.transports.Console()
-  ],
-  exceptionHandlers: [
-    new winston.transports.Console()
-  ],
-});
 
 // Elasticsearch Client - Defaults to localhost if true and unspecified
 const elasticsearchUrl = process.env['PASC_ELASTICSEARCH_URL'] || "http://localhost:9200/";
@@ -76,6 +48,7 @@ const storage = new Storage(); //localhost test auth
 const bucketName = 'cessda-fuji-storage-dev';
 
 async function fujiMetrics() {
+  //prepare request for gathering all study links
   const cdcusername = process.env['CDC_USERNAME'];
   const cdcpassword = process.env['CDC_PASSWORD'];
 
@@ -105,18 +78,17 @@ async function fujiMetrics() {
   }
   catch(error){
     logger.error(`Error at sitemapper fetch: ${error}`);
-    dashLogger.error(`Error at sitemapper fetch: ${error} Sitemapper Error: ${sitemapRes?.errors}`);
+    dashLogger.error(`Error at sitemapper fetch: ${error} Sitemapper Error: ${sitemapRes?.errors}, time:${new Date().toUTCString()}`);
     return;
   }
-  /*  //DEBUG CODE FOR TESTS
+  //DEBUG CODE FOR TESTS
   //const arrayTests = sites.slice(0, 5);
-  const sites = [
+  /*const sites = [
     "https://datacatalogue-staging.cessda.eu/detail?lang=en&q=5b6b6fc079ea7f82337bcff575874ebe2be3615232c7e88dbe27b800e013b19a",
     "https://datacatalogue-staging.cessda.eu/detail?lang=en&q=5b6b6fc079ea7f82337bcff575878ebe2be3615232c7e88dbe27b800e013b19a", //not exists
     "https://datacatalogue-staging.cessda.eu/detail?lang=de&q=14e399fbce890d4c14b1eb6f33bf9255edeebb2e95cebd8cf741aacb3b9cabe8", 
     "https://datacatalogue-staging.cessda.eu/detail?lang=en&q=4088b401cc9a5ab685083e2c915704a64a55052456c371d7937818f714c2d9b4" //not exists
-  ];
-  */
+  ];*/
   sitemapRes.sites.shift(); //remove 1st element - https://datacatalogue.cessda.eu/
   logger.info(`Links Collected: ${sitemapRes.sites.length}`);
   const input = new Readable({ objectMode: true }); //initiating CSV writer
@@ -180,7 +152,7 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
   }
   catch(error){
     logger.error(`Error at CDC Internal API Fetch: ${error}`);
-    dashLogger.error(`Error at CDC Internal API Fetch: ${error}, Response Status: ${response?.status}, URL:${cdcApiUrl}`);
+    dashLogger.error(`Error at CDC Internal API Fetch: ${error}, Response Status:${response?.status}, URL:${cdcApiUrl}, time:${new Date().toUTCString()}`);
     publisher = "NOT-FETCHED-PUBLISHER"
   }
   
@@ -225,12 +197,12 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
   }
   catch (error) {
     if (axios.isAxiosError(error)) {
-      logger.error(`AxiosError at FujiAPI: ${error.message}`);
-      dashLogger.error(`AxiosError at FujiAPI: ${error.message}, URL:${link}`);
+      logger.error(`AxiosError at FujiAPI: ${error.message}, URL:${link}`);
+      dashLogger.error(`AxiosError at FujiAPI: ${error.message}, URL:${link}, time:${new Date().toUTCString()}`);
     } 
     else {
-      logger.error(`Error at FujiAPI: ${error}`);
-      dashLogger.error(`Error at FujiAPI: ${error}, URL:${link}`);
+      logger.error(`Error at FujiAPI: ${error}, URL:${link}`);
+      dashLogger.error(`Error at FujiAPI: ${error}, URL:${link}, time:${new Date().toUTCString()}`);
     }
   }
   return fujiResults;
@@ -268,8 +240,8 @@ async function resultsToElastic(fileName: string, fujiResults: JSON) {
     logger.info(`inserted in ES: ${fileName}`);
   }
   catch (error) {
-    logger.error(`error in insert to ES: ${error}`);
-    dashLogger.error(`error in insert to ES: ${error}`);
+    logger.error(`error in insert to ES: ${error}, filename:${fileName}`);
+    dashLogger.error(`error in insert to ES: ${error}, filename:${fileName}, time:${new Date().toUTCString()}`);
   }
 }
 
@@ -287,11 +259,12 @@ async function uploadFromMemory(fileName: string, fujiResults: Buffer) {
 
 function resultsToHDD(fileName: string, fujiResults: JSON) {
   writeFile(`../outputs/${fileName}`, JSON.stringify(fujiResults, null, 4), (err) => {
-    if (err)
-      logger.error(`Error writing to file: ${err}`);
-    else {
-      logger.info("File written successfully");
+    if (err){
+      logger.error(`Error writing to file: ${err}, filename:${fileName}`);
+      dashLogger.error(`Error writing to file: ${err}, filename:${fileName}, time:${new Date().toUTCString()}`);
     }
+    else
+      logger.info("File written successfully");
   });
 }
 
