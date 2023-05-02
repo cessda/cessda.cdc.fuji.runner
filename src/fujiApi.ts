@@ -179,13 +179,12 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
     if (axios.isAxiosError(error)) {
       logger.error(`AxiosError at FujiAPI: ${error.message}, Response Status:${error.response?.status}, URL:${link}`);
       dashLogger.error(`AxiosError at FujiAPI: ${error.message}, Response Status:${error.response?.status}, URL:${link}, time:${new Date().toUTCString()}`);
-      return undefined;
     }
     else {
       logger.error(`Error at FujiAPI: ${error}, URL:${link}`);
       dashLogger.error(`Error at FujiAPI: ${error}, URL:${link}, time:${new Date().toUTCString()}`);
-      return undefined;
     }
+    return undefined;
   }
   //Delete scores and logs from response that are not needed
   delete fujiResults['results'];
