@@ -73,10 +73,10 @@ async function fujiMetrics() {
   //const fullDate =  runDate.toISOString();
   const fullDate = [runDate.getFullYear(), runDate.getMonth() + 1, runDate.getDate(), runDate.getHours(), runDate.getMinutes(), runDate.getSeconds()].join('-');
   let sitemapRes: SitemapperResponse | undefined;
-  try{
+  try {
     sitemapRes = await cdcLinks.fetch();
   }
-  catch(error){
+  catch (error) {
     logger.error(`Error at sitemapper fetch: ${error}`);
     dashLogger.error(`Error at sitemapper fetch: ${error} Sitemapper Error: ${sitemapRes?.errors}, time:${new Date().toUTCString()}`);
     return;
@@ -86,8 +86,9 @@ async function fujiMetrics() {
   /*const sites = [
     "https://datacatalogue-staging.cessda.eu/detail?lang=en&q=5b6b6fc079ea7f82337bcff575874ebe2be3615232c7e88dbe27b800e013b19a",
     "https://datacatalogue-staging.cessda.eu/detail?lang=en&q=5b6b6fc079ea7f82337bcff575878ebe2be3615232c7e88dbe27b800e013b19a", //not exists
-    "https://datacatalogue-staging.cessda.eu/detail?lang=de&q=14e399fbce890d4c14b1eb6f33bf9255edeebb2e95cebd8cf741aacb3b9cabe8", 
-    "https://datacatalogue-staging.cessda.eu/detail?lang=en&q=4088b401cc9a5ab685083e2c915704a64a55052456c371d7937818f714c2d9b4" //not exists
+    "https://datacatalogue-staging.cessda.eu/detail?lang=de&q=14e399fbce890d4c14b1eb6f33bf9255edeebb2e95cebd8cf741aacb3b9cabe8",
+    "https://datacatalogue-staging.cessda.eu/detail?lang=en&q=4088b401cc9a5ab685083e2c915704a64a55052456c371d7937818f714c2d9b4", //not exists
+    "https://datacatalogue-staging.cessda.eu/detail?q=b79b3905826d9e8c5691e8387c374ffcadcda7478d3324c3867b0251f4aa8d11&lang=en", //not exists
   ];*/
   sitemapRes.sites.shift(); //remove 1st element - https://datacatalogue.cessda.eu/
   logger.info(`Links Collected: ${sitemapRes.sites.length}`);
@@ -142,24 +143,24 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
   logger.info(`\n`);
   logger.info(`Name: ${fileName}`);
   const cdcApiUrl = 'https://datacatalogue-staging.cessda.eu/api/json/cmmstudy_' + urlParams.get('lang') + '/' + urlParams.get('q');
-  let response: Response | undefined;
+  let fetchRes: Response | undefined;
   let data: any
   let publisher: string | undefined;
-  try{
-    response = await fetch(cdcApiUrl, { method: 'GET', headers: requestHeaders });
-    data = await response?.json() as any;
+  try {
+    fetchRes = await fetch(cdcApiUrl, { method: 'GET', headers: requestHeaders });
+    data = await fetchRes?.json() as any;
     publisher = data.publisherFilter.publisher;
   }
-  catch(error){
+  catch (error) {
     logger.error(`Error at CDC Internal API Fetch: ${error}`);
-    dashLogger.error(`Error at CDC Internal API Fetch: ${error}, Response Status:${response?.status}, URL:${cdcApiUrl}, time:${new Date().toUTCString()}`);
+    dashLogger.error(`Error at CDC Internal API Fetch: ${error}, Response Status:${fetchRes?.status}, URL:${cdcApiUrl}, time:${new Date().toUTCString()}`);
     publisher = "NOT-FETCHED-PUBLISHER"
   }
-  
-  let res: AxiosResponse<any, any>;
+
+  let axiosRes: AxiosResponse<any, any>;
   let fujiResults: any | undefined;
   try {
-      res = await axios.post('http://34.107.135.203/fuji/api/v1/evaluate', {
+    axiosRes = await axios.post('http://34.107.135.203/fuji/api/v1/evaluate', {
       "metadata_service_endpoint": "",
       "metadata_service_type": "",
       "object_identifier": link,
@@ -171,40 +172,43 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
         password: process.env['FUJI_PASSWORD']!
       }
     });
-    logger.info(`FujiAPI statusCode: ${res.status}`);
-    fujiResults = res.data;
-    //Delete scores and logs from response that are not needed
-    delete fujiResults['results'];
-    delete fujiResults.summary.maturity;
-    delete fujiResults.summary.score_earned;
-    delete fujiResults.summary.score_total;
-    delete fujiResults.summary.status_passed
-    delete fujiResults.summary.status_total;
-    fujiResults['summary']['score_percent']['R1_1'] = fujiResults['summary']['score_percent']['R1.1'];
-    delete fujiResults['summary']['score_percent']['R1.1'];
-    fujiResults['summary']['score_percent']['R1_2'] = fujiResults['summary']['score_percent']['R1.2'];
-    delete fujiResults['summary']['score_percent']['R1.2'];
-    fujiResults['summary']['score_percent']['R1_3'] = fujiResults['summary']['score_percent']['R1.3'];
-    delete fujiResults['summary']['score_percent']['R1.3'];
-    fujiResults['publisher'] = publisher;
-    fujiResults['uid'] = urlParams.get('q') + "-" + urlParams.get('lang') + "-" + fullDate;
-    fujiResults['dateID'] = "FujiRun-" + fullDate;
-
-    //save data to ES and/or localFiles/CloudBucket
-    await resultsToElastic(fileName, fujiResults);
-    resultsToHDD(fileName, fujiResults); //Write-to-HDD-localhost function
-    //uploadFromMemory(fileName, fujiResults).catch(console.error); //Write-to-Cloud-Bucket function
+    logger.info(`FujiAPI statusCode: ${axiosRes.status}`);
+    fujiResults = axiosRes.data;
   }
   catch (error) {
     if (axios.isAxiosError(error)) {
-      logger.error(`AxiosError at FujiAPI: ${error.message}, URL:${link}`);
-      dashLogger.error(`AxiosError at FujiAPI: ${error.message}, URL:${link}, time:${new Date().toUTCString()}`);
-    } 
+      logger.error(`AxiosError at FujiAPI: ${error.message}, Response Status:${error.response?.status}, URL:${link}`);
+      dashLogger.error(`AxiosError at FujiAPI: ${error.message}, Response Status:${error.response?.status}, URL:${link}, time:${new Date().toUTCString()}`);
+      return undefined;
+    }
     else {
       logger.error(`Error at FujiAPI: ${error}, URL:${link}`);
       dashLogger.error(`Error at FujiAPI: ${error}, URL:${link}, time:${new Date().toUTCString()}`);
+      return undefined;
     }
   }
+  //Delete scores and logs from response that are not needed
+  delete fujiResults['results'];
+  delete fujiResults.summary.maturity;
+  delete fujiResults.summary.score_earned;
+  delete fujiResults.summary.score_total;
+  delete fujiResults.summary.status_passed
+  delete fujiResults.summary.status_total;
+  fujiResults['summary']['score_percent']['R1_1'] = fujiResults['summary']['score_percent']['R1.1'];
+  delete fujiResults['summary']['score_percent']['R1.1'];
+  fujiResults['summary']['score_percent']['R1_2'] = fujiResults['summary']['score_percent']['R1.2'];
+  delete fujiResults['summary']['score_percent']['R1.2'];
+  fujiResults['summary']['score_percent']['R1_3'] = fujiResults['summary']['score_percent']['R1.3'];
+  delete fujiResults['summary']['score_percent']['R1.3'];
+  fujiResults['publisher'] = publisher;
+  fujiResults['uid'] = urlParams.get('q') + "-" + urlParams.get('lang') + "-" + fullDate;
+  fujiResults['dateID'] = "FujiRun-" + fullDate;
+
+  //save data to ES and/or localFiles/CloudBucket
+  await resultsToElastic(fileName, fujiResults);
+  resultsToHDD(fileName, fujiResults); //Write-to-HDD-localhost function
+  //uploadFromMemory(fileName, fujiResults).catch(console.error); //Write-to-Cloud-Bucket function
+
   return fujiResults;
 } //END apiLoop function
 
@@ -259,7 +263,7 @@ async function uploadFromMemory(fileName: string, fujiResults: Buffer) {
 
 function resultsToHDD(fileName: string, fujiResults: JSON) {
   writeFile(`../outputs/${fileName}`, JSON.stringify(fujiResults, null, 4), (err) => {
-    if (err){
+    if (err) {
       logger.error(`Error writing to file: ${err}, filename:${fileName}`);
       dashLogger.error(`Error writing to file: ${err}, filename:${fileName}, time:${new Date().toUTCString()}`);
     }
