@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@elastic/elasticsearch": "7.17.0",
-    "@google-cloud/storage": "^6.7.0",
+    "@google-cloud/storage": "^6.10.1",
     "@types/elasticsearch": "^5.0.40",
     "@types/node-fetch": "^2.6.2",
     "axios": "^1.2.0",
