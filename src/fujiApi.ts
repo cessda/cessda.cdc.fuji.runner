@@ -64,7 +64,7 @@ async function fujiMetrics() {
     url: 'https://datacatalogue-staging.cessda.eu/sitemap_index.xml',
     timeout: 15000, // 15 seconds
     debug: true,
-    retries: 1,
+    retries: 3,
     requestHeaders
   });
   //Start Execution
@@ -137,6 +137,7 @@ async function fujiMetrics() {
 };
 
 async function apiLoop(link: string, fullDate: string, requestHeaders: { Authorization: string; }): Promise<JSON | undefined> {
+  //Begin internal CDC API call to access study details (publisher)
   const urlLink = new URL(link);
   const urlParams = urlLink.searchParams;
   const fileName = urlParams.get('q') + "-" + urlParams.get('lang') + "-" + fullDate + ".json";
@@ -144,19 +145,31 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
   logger.info(`Name: ${fileName}`);
   const cdcApiUrl = 'https://datacatalogue-staging.cessda.eu/api/json/cmmstudy_' + urlParams.get('lang') + '/' + urlParams.get('q');
   let fetchRes: Response | undefined;
-  let data: any
+  let data: any;
   let publisher: string | undefined;
-  try {
-    fetchRes = await fetch(cdcApiUrl, { method: 'GET', headers: requestHeaders });
-    data = await fetchRes?.json() as any;
-    publisher = data.publisherFilter.publisher;
+  let retries = 0;
+  let maxRetries = 5;
+  let success = false;
+  while (retries <= maxRetries && !success) {
+    try {
+      fetchRes = await fetch(cdcApiUrl, { method: 'GET', headers: requestHeaders });
+      data = await fetchRes?.json() as any;
+      publisher = data.publisherFilter.publisher;
+      success = true;
+    }
+    catch (error) {
+      logger.error(`Error at CDC Internal API Fetch: ${error}`);
+      dashLogger.error(`Error at CDC Internal API Fetch: ${error}, Response Status:${fetchRes?.status}, URL:${cdcApiUrl}, time:${new Date().toUTCString()}`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    retries++
   }
-  catch (error) {
-    logger.error(`Error at CDC Internal API Fetch: ${error}`);
-    dashLogger.error(`Error at CDC Internal API Fetch: ${error}, Response Status:${fetchRes?.status}, URL:${cdcApiUrl}, time:${new Date().toUTCString()}`);
-    publisher = "NOT-FETCHED-PUBLISHER"
+  if(retries >= maxRetries){
+    logger.error(`Too many  request retries.`);
+    dashLogger.error(`Too many  request retries, URL:${cdcApiUrl}, time:${new Date().toUTCString()}`);
+    publisher = "NOT-FETCHED-PUBLISHER";
   }
-
+  //Begin F-UJI API call to access study details (publisher)
   let axiosRes: AxiosResponse<any, any>;
   let fujiResults: any | undefined;
   try {
