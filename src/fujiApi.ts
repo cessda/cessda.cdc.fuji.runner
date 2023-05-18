@@ -160,7 +160,7 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
     catch (error) {
       logger.error(`Error at CDC Internal API Fetch: ${error}`);
       dashLogger.error(`Error at CDC Internal API Fetch: ${error}, Response Status:${fetchRes?.status}, URL:${cdcApiUrl}, time:${new Date().toUTCString()}`);
-      await new Promise(resolve => setTimeout(resolve, 500)); //delay new retry by 0.5sec
+      await new Promise(resolve => setTimeout(resolve, 5000)); //delay new retry by 5sec
     }
     retries++;
   }
@@ -201,7 +201,7 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
         logger.error(`Error at FujiAPI: ${error}, URL:${link}`);
         dashLogger.error(`Error at FujiAPI: ${error}, URL:${link}, time:${new Date().toUTCString()}`);
       }
-      await new Promise(resolve => setTimeout(resolve, 500)); //delay new retry by 0.5sec
+      await new Promise(resolve => setTimeout(resolve, 5000)); //delay new retry by 5sec
     }
     retries++;
   }
