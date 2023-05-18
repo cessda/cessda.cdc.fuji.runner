@@ -147,8 +147,8 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
   let fetchRes: Response | undefined;
   let data: any;
   let publisher: string | undefined;
+  let maxRetries: number = 10;
   let retries: number = 0;
-  let maxRetries: number = 5;
   let success: boolean = false;
   while (retries <= maxRetries && !success) {
     try {
@@ -173,7 +173,6 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
   let axiosRes: AxiosResponse<any, any>;
   let fujiResults: any | undefined;
   retries = 0;
-  maxRetries = 5;
   success = false;
   while (retries <= maxRetries && !success) {
     try {
@@ -197,13 +196,12 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
       if (axios.isAxiosError(error)) {
         logger.error(`AxiosError at FujiAPI: ${error.message}, Response Status:${error.response?.status}, URL:${link}`);
         dashLogger.error(`AxiosError at FujiAPI: ${error.message}, Response Status:${error.response?.status}, URL:${link}, time:${new Date().toUTCString()}`);
-        await new Promise(resolve => setTimeout(resolve, 500)); //delay new retry by 0.5sec
       }
       else {
         logger.error(`Error at FujiAPI: ${error}, URL:${link}`);
         dashLogger.error(`Error at FujiAPI: ${error}, URL:${link}, time:${new Date().toUTCString()}`);
-        await new Promise(resolve => setTimeout(resolve, 500)); //delay new retry by 0.5sec
       }
+      await new Promise(resolve => setTimeout(resolve, 500)); //delay new retry by 0.5sec
     }
     retries++;
   }
