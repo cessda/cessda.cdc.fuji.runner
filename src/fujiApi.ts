@@ -191,6 +191,7 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
       });
       logger.info(`FujiAPI statusCode: ${axiosRes.status}`);
       fujiResults = axiosRes.data;
+      success = true;
     }
     catch (error) {
       if (axios.isAxiosError(error)) {
