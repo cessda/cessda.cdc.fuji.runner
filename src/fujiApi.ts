@@ -5,7 +5,6 @@ import { URL } from 'url';
 import { Storage } from '@google-cloud/storage';
 import { Client } from '@elastic/elasticsearch'
 import { createWriteStream, writeFile } from 'fs';
-import fetch, { Response } from 'node-fetch'
 import { Transform } from "json2csv";
 import { parseAsync } from "json2csv";
 import { Readable } from 'stream';
@@ -62,9 +61,7 @@ async function fujiMetrics() {
   };
   const cdcLinks = new Sitemapper({
     url: 'https://datacatalogue-staging.cessda.eu/sitemap_index.xml',
-    timeout: 15000, // 15 seconds
-    debug: true,
-    retries: 3,
+    timeout: 5000, // 5 seconds
     requestHeaders
   });
   //Start Execution
@@ -137,29 +134,28 @@ async function fujiMetrics() {
 };
 
 async function apiLoop(link: string, fullDate: string, requestHeaders: { Authorization: string; }): Promise<JSON | undefined> {
-  //Begin internal CDC API call to access study details (publisher)
+  //Begin Internal CDC API call to access study details (publisher)
   const urlLink = new URL(link);
   const urlParams = urlLink.searchParams;
   const fileName = urlParams.get('q') + "-" + urlParams.get('lang') + "-" + fullDate + ".json";
   logger.info(`\n`);
   logger.info(`Name: ${fileName}`);
   const cdcApiUrl = 'https://datacatalogue-staging.cessda.eu/api/json/cmmstudy_' + urlParams.get('lang') + '/' + urlParams.get('q');
-  let fetchRes: Response | undefined;
-  let data: any;
+  let cdcApiRes: AxiosResponse<any, any>;
   let publisher: string | undefined;
   let maxRetries: number = 10;
   let retries: number = 0;
   let success: boolean = false;
   while (retries <= maxRetries && !success) {
     try {
-      fetchRes = await fetch(cdcApiUrl, { method: 'GET', headers: requestHeaders });
-      data = await fetchRes?.json() as any;
-      publisher = data.publisherFilter.publisher;
+      cdcApiRes = await axios.get(cdcApiUrl, { headers: requestHeaders });
+      logger.info(`CDC Internal API statusCode: ${cdcApiRes.status}`);
+      publisher = cdcApiRes.data.publisherFilter.publisher;
       success = true;
     }
     catch (error) {
       logger.error(`Error at CDC Internal API Fetch: ${error}`);
-      dashLogger.error(`Error at CDC Internal API Fetch: ${error}, Response Status:${fetchRes?.status}, URL:${cdcApiUrl}, time:${new Date().toUTCString()}`);
+      dashLogger.error(`Error at CDC Internal API Fetch: ${error}, URL:${cdcApiUrl}, time:${new Date().toUTCString()}`);
       await new Promise(resolve => setTimeout(resolve, 5000)); //delay new retry by 5sec
     }
     retries++;
@@ -170,13 +166,13 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
     publisher = "NOT-FETCHED-PUBLISHER";
   }
   //Begin F-UJI API call to access study details (publisher)
-  let axiosRes: AxiosResponse<any, any>;
+  let fujiRes: AxiosResponse<any, any>;
   let fujiResults: any | undefined;
   retries = 0;
   success = false;
   while (retries <= maxRetries && !success) {
     try {
-      axiosRes = await axios.post('http://34.107.135.203/fuji/api/v1/evaluate', {
+      fujiRes = await axios.post('http://34.107.135.203/fuji/api/v1/evaluate', {
         "metadata_service_endpoint": "",
         "metadata_service_type": "",
         "object_identifier": link,
@@ -188,8 +184,8 @@ async function apiLoop(link: string, fullDate: string, requestHeaders: { Authori
           password: process.env['FUJI_PASSWORD']!
         }
       });
-      logger.info(`FujiAPI statusCode: ${axiosRes.status}`);
-      fujiResults = axiosRes.data;
+      logger.info(`FujiAPI statusCode: ${fujiRes.status}`);
+      fujiResults = fujiRes.data;
       success = true;
     }
     catch (error) {
