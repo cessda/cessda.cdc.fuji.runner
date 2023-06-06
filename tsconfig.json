@@ -1,7 +1,12 @@
 {
   "extends": "@tsconfig/node18-strictest-esm/tsconfig.json",
   "compilerOptions": {
-    "noUnusedLocals": false
+    "noUnusedLocals": false,
+    "preserveValueImports": false,
+    "importsNotUsedAsValues": "remove",
+    "verbatimModuleSyntax": true,
+    "allowJs": true,
+    "checkJs": true,
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
