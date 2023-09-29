@@ -9,6 +9,7 @@ import { Transform } from "json2csv";
 import { parseAsync } from "json2csv";
 import { Readable } from 'stream';
 import * as dotenv from 'dotenv'
+import * as fsPromise from 'fs/promises'; 
 dotenv.config({ path: '../.env' })
 
 // Elasticsearch Client - Defaults to localhost if true and unspecified
@@ -46,7 +47,7 @@ const client = elasticsearchUsername && elasticsearchPassword ? new Client({
 const storage = new Storage(); //localhost test auth
 const bucketName = 'cessda-fuji-storage-dev';
 
-async function fujiMetrics() {
+async function fujiMetrics(line: string) {
   //prepare request for gathering all study links
   const cdcLinks = new Sitemapper({
     url: 'https://datacatalogue.cessda.eu/sitemap_index.xml',
@@ -269,4 +270,8 @@ function resultsToHDD(fileName: string, fujiResults: JSON) {
   });
 }
 
-await fujiMetrics();
+const file = await fsPromise.open('../inputs/sitemaps.txt', 'r');
+ for await (const line of file.readLines()) {
+     console.log(line);
+     await fujiMetrics(line);
+ }

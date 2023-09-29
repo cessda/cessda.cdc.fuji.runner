@@ -1,0 +1,2 @@
+https://datacatalogue.sodanet.gr/sitemap.xml
+https://data.aussda.at/sitemap.xml
