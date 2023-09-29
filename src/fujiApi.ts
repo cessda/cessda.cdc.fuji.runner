@@ -47,10 +47,11 @@ const client = elasticsearchUsername && elasticsearchPassword ? new Client({
 const storage = new Storage(); //localhost test auth
 const bucketName = 'cessda-fuji-storage-dev';
 
-async function fujiMetrics(line: string) {
+async function fujiRunner(line: string) {
   //prepare request for gathering all study links
   const cdcLinks = new Sitemapper({
-    url: 'https://datacatalogue.cessda.eu/sitemap_index.xml',
+    //url: 'https://datacatalogue.cessda.eu/sitemap_index.xml',
+    url: line,
     timeout: 5000, // 5 seconds
   });
   //Start Execution
@@ -67,7 +68,8 @@ async function fujiMetrics(line: string) {
     dashLogger.error(`Error at sitemapper fetch: ${error} Sitemapper Error: ${sitemapRes?.errors}, time:${new Date().toUTCString()}`);
     return;
   }
-  sitemapRes.sites.shift(); //remove 1st element - https://datacatalogue.cessda.eu/
+  //REMOVE RECORDS THAT DONT CONTAIN DOI IN URL ?
+  //sitemapRes.sites.shift(); //remove 1st element - https://datacatalogue.cessda.eu/
   logger.info(`Links Collected: ${sitemapRes.sites.length}`);
   const input = new Readable({ objectMode: true }); //initiating CSV writer
   input._read = () => { };
@@ -109,8 +111,7 @@ async function fujiMetrics(line: string) {
   } catch (err) {
     logger.error(`CSV writer Error: ${err}`)
   }
-  logger.info('Finished API loop function');
-  logger.info('Script Ended');
+  logger.info('Finished API loop function - End of Script');
 };
 
 async function apiLoop(link: string, fullDate: string): Promise<JSON | undefined> {
@@ -270,8 +271,17 @@ function resultsToHDD(fileName: string, fujiResults: JSON) {
   });
 }
 
+function cdcGetPublisher(){
+
+}
+
+function getFUJIResults(){
+
+}
+
+//start execution
 const file = await fsPromise.open('../inputs/sitemaps.txt', 'r');
  for await (const line of file.readLines()) {
      console.log(line);
-     await fujiMetrics(line);
+     await fujiRunner(line);
  }
