@@ -4,7 +4,7 @@ import { dashLogger, logger } from "./logger.js";
 import { URL } from 'url';
 import { Storage } from '@google-cloud/storage';
 import { Client } from '@elastic/elasticsearch'
-import { createWriteStream, writeFile } from 'fs';
+import { createWriteStream, writeFile, existsSync, mkdirSync } from 'fs';
 import { Transform } from "json2csv";
 import { parseAsync } from "json2csv";
 import { Readable } from 'stream';
@@ -47,18 +47,13 @@ const client = elasticsearchUsername && elasticsearchPassword ? new Client({
 const storage = new Storage(); //localhost test auth
 const bucketName = 'cessda-fuji-storage-dev';
 
-async function fujiRunner(line: string) {
+async function apiRunner(sitemapLine: URL) {
+  const hostname = sitemapLine.hostname;
   //prepare request for gathering all study links
   const cdcLinks = new Sitemapper({
-    //url: 'https://datacatalogue.cessda.eu/sitemap_index.xml',
-    url: line,
+    url: sitemapLine.toString(),
     timeout: 5000, // 5 seconds
   });
-  //Start Execution
-  await elasticIndexCheck(); //creates ES index if it doesnt exist, skips creating if it does exist
-  const runDate = new Date();
-  //const fullDate =  runDate.toISOString();
-  const fullDate = [runDate.getFullYear(), runDate.getMonth() + 1, runDate.getDate(), runDate.getHours(), runDate.getMinutes(), runDate.getSeconds()].join('-');
   let sitemapRes: SitemapperResponse | undefined;
   try {
     sitemapRes = await cdcLinks.fetch();
@@ -68,15 +63,42 @@ async function fujiRunner(line: string) {
     dashLogger.error(`Error at sitemapper fetch: ${error} Sitemapper Error: ${sitemapRes?.errors}, time:${new Date().toUTCString()}`);
     return;
   }
-  //REMOVE RECORDS THAT DONT CONTAIN DOI IN URL ?
-  //sitemapRes.sites.shift(); //remove 1st element - https://datacatalogue.cessda.eu/
   logger.info(`Links Collected: ${sitemapRes.sites.length}`);
-  const input = new Readable({ objectMode: true }); //initiating CSV writer
+  //create directory for storing results per sitemap link
+  let dir = '../outputs/'+hostname;
+  if (!existsSync(dir)){
+    mkdirSync(dir, { recursive: true });
+  }
+  //creates ES index if it doesnt exist, skips creating if it does exist
+  await elasticIndexCheck();
+  const runDate = new Date();
+  const fullDate = [runDate.getFullYear(), runDate.getMonth() + 1, runDate.getDate(), runDate.getHours(), runDate.getMinutes(), runDate.getSeconds()].join('-');
+  //Initiating CSV writer
+  const input = new Readable({ objectMode: true });
   input._read = () => { };
-  // Begin API Loop for studies fetched 
+  // Begin API Loop for studies fetched
+  // TODO: `REMOVE RECORDS THAT DONT CONTAIN DOI IN URL ?
+  //sitemapRes.sites.shift(); //remove 1st element - https://datacatalogue.cessda.eu/
   for (const site of sitemapRes.sites) {
-    const data = await apiLoop(site, fullDate);
-    input.push(data);
+    const urlLink = new URL(site);
+    const urlParams = urlLink.searchParams;
+    let publisher;
+    let fileName;
+    if (site.includes("cessda")){  //get the publisher from CDC Internal API
+      fileName = urlParams.get('q') + "-" + urlParams.get('lang') + "-" + fullDate + ".json";
+      publisher = getCDCPublisher(urlParams);
+    }
+    else{
+      // TODO: check if all sitemaps have the same persistentId parameter
+      fileName = urlParams.get('persistentId') + "-" + fullDate + ".json";
+      publisher = hostname;
+    }
+    const fujiData = getFUJIResults(site);
+    //save data to ES and/or localFiles/CloudBucket
+    await resultsToElastic(fileName, fujiData);
+    resultsToHDD(fileName, fujiData); //Write-to-HDD-localhost function
+    //uploadFromMemory(fileName, fujiResults).catch0(console.error); //Write-to-Cloud-Bucket function
+    input.push(fujiData); //Push data to CSV writer
   }
   input.push(null);
   const outputLocal = createWriteStream(`../outputs/CSV_DATA_${fullDate}.csv`, { encoding: 'utf8' });
@@ -111,16 +133,10 @@ async function fujiRunner(line: string) {
   } catch (err) {
     logger.error(`CSV writer Error: ${err}`)
   }
-  logger.info('Finished API loop function - End of Script');
+  logger.info(`CSV writer Error: ${sitemapLine}`);
 };
 
-async function apiLoop(link: string, fullDate: string): Promise<JSON | undefined> {
-  //Begin Internal CDC API call to access study details (publisher)
-  const urlLink = new URL(link);
-  const urlParams = urlLink.searchParams;
-  const fileName = urlParams.get('q') + "-" + urlParams.get('lang') + "-" + fullDate + ".json";
-  logger.info(`\n`);
-  logger.info(`Name: ${fileName}`);
+async function getCDCPublisher(urlParams: URLSearchParams){
   const cdcApiUrl = 'https://datacatalogue.cessda.eu/api/json/cmmstudy_' + urlParams.get('lang') + '/' + urlParams.get('q');
   let cdcApiRes: AxiosResponse<any, any>;
   let publisher: string | undefined;
@@ -144,13 +160,17 @@ async function apiLoop(link: string, fullDate: string): Promise<JSON | undefined
   if(retries >= maxRetries){
     logger.error(`Too many  request retries on internal CDC API.`);
     dashLogger.error(`Too many  request retries on internal CDC API, URL:${cdcApiUrl}, time:${new Date().toUTCString()}`);
-    publisher = "NOT-FETCHED-PUBLISHER";
+    publisher = "NOT-FETCHED-CDC-PUBLISHER";
   }
-  //Begin F-UJI API call to access study details (publisher)
+  return publisher;
+}
+
+async function getFUJIResults(link: string) {
   let fujiRes: AxiosResponse<any, any>;
   let fujiResults: any | undefined;
-  retries = 0;
-  success = false;
+  let maxRetries: number = 10;
+  let retries: number = 0;
+  let success: boolean = false;
   while (retries <= maxRetries && !success) {
     try {
       fujiRes = await axios.post('http://34.107.135.203/fuji/api/v1/evaluate', {
@@ -203,13 +223,7 @@ async function apiLoop(link: string, fullDate: string): Promise<JSON | undefined
   fujiResults['publisher'] = publisher;
   fujiResults['uid'] = urlParams.get('q') + "-" + urlParams.get('lang') + "-" + fullDate;
   fujiResults['dateID'] = "FujiRun-" + fullDate;
-  //save data to ES and/or localFiles/CloudBucket
-  await resultsToElastic(fileName, fujiResults);
-  resultsToHDD(fileName, fujiResults); //Write-to-HDD-localhost function
-  //uploadFromMemory(fileName, fujiResults).catch0(console.error); //Write-to-Cloud-Bucket function
-
-  return fujiResults;
-} //END apiLoop function
+}
 
 async function elasticIndexCheck() {
   const { body: exists } = await client.indices.exists({ index: 'fuji-results' })
@@ -271,17 +285,11 @@ function resultsToHDD(fileName: string, fujiResults: JSON) {
   });
 }
 
-function cdcGetPublisher(){
-
-}
-
-function getFUJIResults(){
-
-}
-
-//start execution
+//START EXECUTION
+logger.info('Start of Script');
 const file = await fsPromise.open('../inputs/sitemaps.txt', 'r');
- for await (const line of file.readLines()) {
-     console.log(line);
-     await fujiRunner(line);
+ for await (const sitemapLine of file.readLines()) {
+    logger.info(`Processing sitemap: ${sitemapLine}`);
+    await apiRunner(new URL(sitemapLine));
  }
+ logger.info('End of Script');
