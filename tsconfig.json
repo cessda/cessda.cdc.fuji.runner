@@ -7,6 +7,11 @@
     "verbatimModuleSyntax": true,
     "allowJs": true,
     "checkJs": true,
+    //"target": "es5",
+    //"module": "commonjs",
+    "rootDir": "src", // Location of TypeScript files
+    "outDir": "src", // Location of compiled JavaScript files
+    "sourceMap": true // Generate sourcemaps
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]

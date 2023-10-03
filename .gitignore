@@ -7,7 +7,9 @@
 *.o
 *.so
 fujiApi.js
+fujiApi.js.map
 logger.js
+logger.js.map
 
 # Packages #
 ############
