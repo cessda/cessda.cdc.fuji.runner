@@ -65,7 +65,7 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
   }
   logger.info(`Links Collected: ${sitemapRes.sites.length}`);
   // TODO: `REMOVE RECORDS THAT DONT CONTAIN DOI IN URL + NEED TO CHECK FOR OTHER SP DOI REFERENCES + CESSDA
-  let sitemapResFiltered: string[]= [];
+  let sitemapResFiltered: string[] = [];
   switch (hostname) {
     case "data.aussda.at":
       sitemapResFiltered= sitemapRes.sites.filter((element) => {
@@ -78,7 +78,7 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
       });
     break;
     case "datacatalogue.cessda.eu":
-      sitemapRes.sites.shift(); //remove 1st element - https://datacatalogue.cessda.eu/
+      sitemapResFiltered = sitemapRes.sites.slice(1); //remove 1st element - https://datacatalogue.cessda.eu/
     break;
   }
   //create directory for storing results per sitemap link
