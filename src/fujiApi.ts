@@ -64,11 +64,23 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
     return;
   }
   logger.info(`Links Collected: ${sitemapRes.sites.length}`);
-  const sitemapResFiltered: string[] = sitemapRes.sites.filter((element) => {
-    //return element !== 'persistentId';
-    return element.includes("persistentId");
-  });
-  
+  // TODO: `REMOVE RECORDS THAT DONT CONTAIN DOI IN URL + NEED TO CHECK FOR OTHER SP DOI REFERENCES + CESSDA
+  let sitemapResFiltered: string[]= [];
+  switch (hostname) {
+    case "data.aussda.at":
+      sitemapResFiltered= sitemapRes.sites.filter((element) => {
+        return element.includes("persistentId");
+      });
+    break;
+    case "datacatalogue.sodanet.gr":
+      sitemapResFiltered= sitemapRes.sites.filter((element) => {
+        return element.includes("persistentId");
+      });
+    break;
+    case "datacatalogue.cessda.eu":
+      sitemapRes.sites.shift(); //remove 1st element - https://datacatalogue.cessda.eu/
+    break;
+  }
   //create directory for storing results per sitemap link
   let dir: string = '../outputs/'+hostname;
   if (!existsSync(dir)){
@@ -80,8 +92,6 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
   const csvFUJI = new Readable({ objectMode: true });
   csvFUJI._read = () => { };
   // Begin API Loop for studies fetched
-  // TODO: `REMOVE RECORDS THAT DONT CONTAIN DOI IN URL ?
-  //sitemapRes.sites.shift(); //remove 1st element - i.e. https://datacatalogue.cessda.eu/
   for (const site of sitemapResFiltered) {
     logger.info(`Processing study: ${site}`);
     const urlLink: URL = new URL(site);
@@ -137,7 +147,7 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
   } catch (err) {
     logger.error(`CSV writer Error: ${err}`)
   }
-  logger.info(`Finished: ${sitemapLine}`);
+  logger.info(`Finished sitemap: ${sitemapLine}`);
 };
 
 async function elasticIndexCheck() {
@@ -245,6 +255,7 @@ async function getFUJIResults(link: string, publisher: string | Promise<string>,
   delete fujiResults['summary']['score_percent']['R1.3'];
   fujiResults['publisher'] = publisher;
   fujiResults['dateID'] = "FujiRun-" + fullDate;
+  // TODO: CHECK FOR OTHER SP'S URI PARAMS
   if (urlParams.get('q') && urlParams.get('lang'))
     fujiResults['uid'] = urlParams.get('q') + "-" + urlParams.get('lang') + "-" + fullDate;
   else
