@@ -78,7 +78,7 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
       });
     break;
     case "datacatalogue.cessda.eu":
-      sitemapResFiltered = sitemapRes.sites.slice(1); //remove 1st element - https://datacatalogue.cessda.eu/
+      sitemapResFiltered = sitemapRes.sites.slice(0); //remove element - https://datacatalogue.cessda.eu/
     break;
   }
   //create directory for storing results per sitemap link
@@ -273,7 +273,7 @@ async function resultsToElastic(fileName: string, fujiResults: JSON | undefined)
       }
     }
     await client.index(elasticdoc)
-    logger.info(`inserted in ES: ${fileName}`);
+    logger.info(`inserted successfully in ES: ${fileName}`);
   }
   catch (error) {
     logger.error(`error in insert to ES: ${error}, filename:${fileName}`);
@@ -288,7 +288,7 @@ function resultsToHDD(dir: string, fileName: string, fujiResults: JSON | undefin
       dashLogger.error(`Error writing to file: ${err}, filename:${fileName}, time:${new Date().toUTCString()}`);
     }
     else
-      logger.info(`File: ${fileName} written successfully`);
+      logger.info(`File written successfully: ${fileName}`);
   });
 }
 
@@ -296,7 +296,6 @@ async function uploadFromMemory(fileName: string, fujiResults: Buffer) {
   /* DEBUG CODE
   const storageBucket = storage.bucket(bucketName);
   storage.getBuckets().then(x => console.log(x));
-  throw new Error("controlled termination");
   */
   await storage.bucket(bucketName).file(fileName).save(Buffer.from(JSON.stringify(fujiResults)));
   logger.info(
@@ -308,7 +307,7 @@ async function uploadFromMemory(fileName: string, fujiResults: Buffer) {
 logger.info('Start of Script');
 //creates ES index if it doesnt exist, skips creating if it does exist
 await elasticIndexCheck();
-const file = await fsPromise.open('../inputs/sitemaps.txt', 'r');
+const file = await fsPromise.open('../inputs/sitemapsRUN.txt', 'r');
 for await (const sitemapLine of file.readLines()) {
   logger.info(`Processing sitemap: ${sitemapLine}`);
   await apiRunner(new URL(sitemapLine));
