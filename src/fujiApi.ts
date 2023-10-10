@@ -68,17 +68,27 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
   let sitemapResFiltered: string[] = [];
   switch (hostname) {
     case "data.aussda.at":
-      sitemapResFiltered= sitemapRes.sites.filter((element) => {
-        return element.includes("persistentId");
+      sitemapResFiltered= sitemapRes.sites.filter((temp) => {
+        return temp.includes("persistentId");
       });
     break;
     case "datacatalogue.sodanet.gr":
-      sitemapResFiltered= sitemapRes.sites.filter((element) => {
-        return element.includes("persistentId");
+      sitemapResFiltered= sitemapRes.sites.filter((temp) => {
+        return temp.includes("persistentId");
+      });
+    break;
+    case "ssh.datastations.nl":
+      sitemapResFiltered= sitemapRes.sites.filter((temp) => {
+        return temp.includes("persistentId");
+      });
+    break;
+    case "sodha.be":
+      sitemapResFiltered= sitemapRes.sites.filter((temp) => {
+        return temp.includes("persistentId");
       });
     break;
     case "datacatalogue.cessda.eu":
-      sitemapResFiltered = sitemapRes.sites.slice(0); //remove element - https://datacatalogue.cessda.eu/
+      sitemapResFiltered = sitemapRes.sites.filter(temp => temp !== 'https://datacatalogue.cessda.eu/');
     break;
   }
   //create directory for storing results per sitemap link
@@ -115,8 +125,8 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
     csvFUJI.push(fujiData); //Push data to CSV writer
   }
   csvFUJI.push(null);
-  const outputLocal = createWriteStream(`../outputs/CSV_DATA_${fullDate}.csv`, { encoding: 'utf8' });
-  const fields = [
+  const fujiOutputLocal = createWriteStream(`../outputs/CSV-FUJI_${hostname}_${fullDate}.csv`, { encoding: 'utf8' });
+  let fields = [
     'request.object_identifier',
     'summary.score_percent.A',
     'summary.score_percent.A1',
@@ -138,10 +148,10 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
     'timestamp',
     'publisher'
   ];
-  const opts = { fields };
-  const transformOpts = { objectMode: true };
-  const json2csv = new Transform(opts, transformOpts);
-  const processor = csvFUJI.pipe(json2csv).pipe(outputLocal);
+  let opts = { fields };
+  let transformOpts = { objectMode: true };
+  let json2csv = new Transform(opts, transformOpts);
+  let processor = csvFUJI.pipe(json2csv).pipe(fujiOutputLocal);
   try {
     await parseAsync(processor, opts);
   } catch (err) {
