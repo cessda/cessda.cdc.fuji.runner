@@ -90,6 +90,14 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
     case "datacatalogue.cessda.eu":
       sitemapResFiltered = sitemapRes.sites.filter(temp => temp !== 'https://datacatalogue.cessda.eu/');
     break;
+    case "www.adp.fdv.uni-lj.si":
+      sitemapResFiltered= sitemapRes.sites.filter((temp) => {
+        return temp.includes("opisi");
+      });
+    break;
+    case "snd.gu.se":
+      sitemapResFiltered = sitemapRes.sites;
+    break;
   }
   //create directory for storing results per sitemap link
   let dir: string = '../outputs/'+hostname;
@@ -106,19 +114,23 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
     logger.info(`Processing study: ${site}`);
     const urlLink: URL = new URL(site);
     const urlParams: URLSearchParams = urlLink.searchParams;
+    const urlPath: string = urlLink.pathname;
     let publisher: string | Promise<string>;
     let fileName: string;
-    if (site.includes("cessda")){  //get the publisher from CDC Internal API
+    if (site.includes("datacatalogue.cessda.eu")){  //get the publisher from CDC Internal API
       fileName = urlParams.get('q') + "-" + urlParams.get('lang') + "-" + fullDate + ".json";
       publisher = await getCDCPublisher(urlParams);
     }
-    else{
-      // TODO: check if all sitemaps have the same persistentId parameter??
+    else if(site.includes("snd.gu.se") || site.includes("adp.fdv.uni-lj")){
+      fileName = urlPath.replaceAll('/', '-')+".json";
+      publisher = hostname;
+    }
+    else{ // Dataverse cases
       fileName = urlParams.get('persistentId') + "-" + fullDate + ".json";
       fileName = fileName.replace(/[&\/\\#,+()$~%'":*?<>{}]/g,"-");
       publisher = hostname;
     }
-    const fujiData: JSON | undefined = await getFUJIResults(site, publisher, urlParams, fullDate);
+    const fujiData: JSON | undefined = await getFUJIResults(site, publisher, urlParams, urlPath, fullDate);
     resultsToElastic(fileName, fujiData);
     resultsToHDD(dir, fileName, fujiData);
     //uploadFromMemory(fileName, fujiResults).catch0(console.error); //Write-to-Cloud-Bucket function
@@ -158,6 +170,7 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
     logger.error(`CSV writer Error: ${err}`)
   }
   logger.info(`Finished sitemap: ${sitemapLine}`);
+  dashLogger.info(`Finished sitemap: ${sitemapLine}, time:${new Date().toUTCString()}`);
 };
 
 async function elasticIndexCheck() {
@@ -208,7 +221,7 @@ async function getCDCPublisher(urlParams: URLSearchParams): Promise<string>{
   return publisher;
 }
 
-async function getFUJIResults(link: string, publisher: string | Promise<string>, urlParams: URLSearchParams, fullDate: string): Promise<JSON | undefined> {
+async function getFUJIResults(link: string, publisher: string | Promise<string>, urlParams: URLSearchParams, urlPath: string, fullDate: string): Promise<JSON | undefined> {
   let fujiRes: AxiosResponse<any, any>;
   let fujiResults: any | undefined;
   let maxRetries: number = 10;
@@ -266,10 +279,13 @@ async function getFUJIResults(link: string, publisher: string | Promise<string>,
   fujiResults['publisher'] = publisher;
   fujiResults['dateID'] = "FujiRun-" + fullDate;
   // TODO: CHECK FOR OTHER SP'S URI PARAMS
-  if (urlParams.get('q') && urlParams.get('lang'))
+  if (link.includes("datacatalogue.cessda.eu"))  //get the publisher from CDC Internal API
     fujiResults['uid'] = urlParams.get('q') + "-" + urlParams.get('lang') + "-" + fullDate;
-  else
-    fujiResults['uid'] = urlParams.get('persistentId') + "-" + fullDate;
+  else if(link.includes("snd.gu.se") || link.includes("adp.fdv.uni-lj"))
+    fujiResults['uid'] = urlPath.replaceAll('/', '-') + "-" + fullDate;
+  else // Dataverse cases
+    fujiResults['uid'] = urlParams.get('persistentId') + "-" + fullDate; // dataverse case
+  
   return fujiResults;
 }
 
@@ -315,11 +331,14 @@ async function uploadFromMemory(fileName: string, fujiResults: Buffer) {
 
 //START EXECUTION
 logger.info('Start of Script');
+dashLogger.info(`Start of Script, time:${new Date().toUTCString()}`);
 //creates ES index if it doesnt exist, skips creating if it does exist
 await elasticIndexCheck();
 const file = await fsPromise.open('../inputs/sitemapsRUN.txt', 'r');
 for await (const sitemapLine of file.readLines()) {
   logger.info(`Processing sitemap: ${sitemapLine}`);
+  dashLogger.info(`Processing sitemap: ${sitemapLine}, time:${new Date().toUTCString()}`);
   await apiRunner(new URL(sitemapLine));
 }
 logger.info('End of Script');
+dashLogger.info(`End of Script, time:${new Date().toUTCString()}`);
