@@ -113,24 +113,28 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
   for (const site of sitemapResFiltered) {
     logger.info(`Processing study: ${site}`);
     const urlLink: URL = new URL(site);
-    const urlParams: URLSearchParams = urlLink.searchParams;
-    const urlPath: string = urlLink.pathname;
-    let publisher: string | Promise<string>;
     let fileName: string;
+    let studyInfo: StudyInfo = {
+      urlParams: urlLink.searchParams,
+      urlPath: urlLink.pathname.substring(1)
+    };  
     if (site.includes("datacatalogue.cessda.eu")){  //get the publisher from CDC Internal API
-      fileName = urlParams.get('q') + "-" + urlParams.get('lang') + "-" + fullDate + ".json";
-      publisher = await getCDCPublisher(urlParams);
+      fileName = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + fullDate + ".json";
+      const temp: StudyInfo = await getCDCPublisher(studyInfo.urlParams);
+      studyInfo.publisher = temp.publisher;
+      studyInfo.pidStudies = temp.pidStudies;
     }
     else if(site.includes("snd.gu.se") || site.includes("adp.fdv.uni-lj")){
-      fileName = urlPath.replaceAll('/', '-')+".json";
-      publisher = hostname;
+      fileName = studyInfo.urlPath?.replaceAll('/', '-')+".json";
+      studyInfo.publisher = hostname;
     }
     else{ // Dataverse cases
-      fileName = urlParams.get('persistentId') + "-" + fullDate + ".json";
-      fileName = fileName.replace(/[&\/\\#,+()$~%'":*?<>{}]/g,"-");
-      publisher = hostname;
+      fileName = studyInfo.urlParams?.get('persistentId') + "-" + fullDate + ".json".replace(/[&\/\\#,+()$~%'":*?<>{}]/g,"-");
+      //fileName = fileName.replace(/[&\/\\#,+()$~%'":*?<>{}]/g,"-");
+      studyInfo.publisher = hostname;
     }
-    const fujiData: JSON | undefined = await getFUJIResults(site, publisher, urlParams, urlPath, fullDate);
+    //TODO: await 1 promise for both fujiResults and FAIREva results
+    const fujiData: JSON | undefined = await getFUJIResults(site, studyInfo, fullDate);
     resultsToElastic(fileName, fujiData);
     resultsToHDD(dir, fileName, fujiData);
     //uploadFromMemory(fileName, fujiResults).catch0(console.error); //Write-to-Cloud-Bucket function
@@ -158,7 +162,8 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
     'summary.score_percent.R1_2',
     'summary.score_percent.R1_3',
     'timestamp',
-    'publisher'
+    'publisher',
+    'pidStudies'
   ];
   let opts = { fields };
   let transformOpts = { objectMode: true };
@@ -192,10 +197,11 @@ async function elasticIndexCheck() {
   }
 }
 
-async function getCDCPublisher(urlParams: URLSearchParams): Promise<string>{
-  const cdcApiUrl = 'https://datacatalogue.cessda.eu/api/json/cmmstudy_' + urlParams.get('lang') + '/' + urlParams.get('q');
+async function getCDCPublisher(urlParams: URLSearchParams | undefined): Promise<StudyInfo>{
+  const cdcApiUrl = 'https://datacatalogue.cessda.eu/api/json/cmmstudy_' + urlParams?.get('lang') + '/' + urlParams?.get('q');
   let cdcApiRes: AxiosResponse<any, any>;
-  let publisher: Promise<string> | string = "NOT-FETCHED-CDC-PUBLISHER";
+  let publisher: string = "NOT-FETCHED-CDC-PUBLISHER";
+  let pidStudies: string = "NOT-FETCHED-CDC-PIDSTUDIES";
   let maxRetries: number = 10;
   let retries: number = 0;
   let success: boolean = false;
@@ -204,6 +210,15 @@ async function getCDCPublisher(urlParams: URLSearchParams): Promise<string>{
       cdcApiRes = await axios.get(cdcApiUrl);
       logger.info(`CDC Internal API statusCode: ${cdcApiRes.status}`);
       publisher = cdcApiRes.data.publisherFilter.publisher;
+      pidStudies = cdcApiRes.data.pidStudies.forEach( (temp: {agency: string, pid: URL}) => {
+        //ask matthew priorities file
+        if (temp.agency == "DOI"){
+          return temp.pid.pathname.substring(1);
+        }
+        else{
+          return "NOT-FETCHED-CDC-PIDSTUDIES"
+        }
+    });
       success = true;
     }
     catch (error) {
@@ -218,10 +233,12 @@ async function getCDCPublisher(urlParams: URLSearchParams): Promise<string>{
     dashLogger.error(`Too many  request retries on internal CDC API, URL:${cdcApiUrl}, time:${new Date().toUTCString()}`);
     publisher = "NOT-FETCHED-CDC-PUBLISHER";
   }
-  return publisher;
+
+  const cdcApiVars: StudyInfo = {publisher: publisher, pidStudies: pidStudies};
+  return cdcApiVars;
 }
 
-async function getFUJIResults(link: string, publisher: string | Promise<string>, urlParams: URLSearchParams, urlPath: string, fullDate: string): Promise<JSON | undefined> {
+async function getFUJIResults(link: string, studyInfo: StudyInfo, fullDate: string): Promise<JSON | undefined> {
   let fujiRes: AxiosResponse<any, any>;
   let fujiResults: any | undefined;
   let maxRetries: number = 10;
@@ -276,15 +293,17 @@ async function getFUJIResults(link: string, publisher: string | Promise<string>,
   delete fujiResults['summary']['score_percent']['R1.2'];
   fujiResults['summary']['score_percent']['R1_3'] = fujiResults['summary']['score_percent']['R1.3'];
   delete fujiResults['summary']['score_percent']['R1.3'];
-  fujiResults['publisher'] = publisher;
+  fujiResults['publisher'] = studyInfo.publisher;
   fujiResults['dateID'] = "FujiRun-" + fullDate;
   // TODO: CHECK FOR OTHER SP'S URI PARAMS
-  if (link.includes("datacatalogue.cessda.eu"))  //get the publisher from CDC Internal API
-    fujiResults['uid'] = urlParams.get('q') + "-" + urlParams.get('lang') + "-" + fullDate;
+  if (link.includes("datacatalogue.cessda.eu")){
+    fujiResults['uid'] = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + fullDate;
+    fujiResults['pid'] = studyInfo.pidStudies + fullDate;
+  }
   else if(link.includes("snd.gu.se") || link.includes("adp.fdv.uni-lj"))
-    fujiResults['uid'] = urlPath.replaceAll('/', '-') + "-" + fullDate;
+    fujiResults['uid'] = studyInfo.urlPath?.replaceAll('/', '-') + "-" + fullDate;
   else // Dataverse cases
-    fujiResults['uid'] = urlParams.get('persistentId') + "-" + fullDate; // dataverse case
+    fujiResults['uid'] = studyInfo.urlParams?.get('persistentId') + "-" + fullDate; // dataverse case
   
   return fujiResults;
 }
