@@ -1,2 +1,1 @@
-https://datacatalogue.sodanet.gr/sitemap.xml
 https://datacatalogue.cessda.eu/sitemap_index.xml

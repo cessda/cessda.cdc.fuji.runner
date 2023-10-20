@@ -122,7 +122,7 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
       fileName = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + fullDate + ".json";
       const temp: StudyInfo = await getCDCPublisher(studyInfo.urlParams);
       studyInfo.publisher = temp.publisher;
-      studyInfo.pidStudies = temp.pidStudies;
+      studyInfo.studyNumber = temp.studyNumber;
     }
     else if(site.includes("snd.gu.se") || site.includes("adp.fdv.uni-lj")){
       fileName = studyInfo.urlPath?.replaceAll('/', '-')+".json";
@@ -201,8 +201,9 @@ async function elasticIndexCheck() {
 async function getCDCPublisher(urlParams: URLSearchParams | undefined): Promise<StudyInfo>{
   const cdcApiUrl = 'https://datacatalogue.cessda.eu/api/json/cmmstudy_' + urlParams?.get('lang') + '/' + urlParams?.get('q');
   let cdcApiRes: AxiosResponse<any, any>;
-  let publisher: string = "NOT-FETCHED-CDC-PUBLISHER";
-  let pidStudies: string = "NOT-FETCHED-CDC-PIDSTUDIES";
+  let publisher: string = "";
+  //let pidStudies: string = "NOT-FETCHED-CDC-PIDSTUDIES";
+  let studyNumber: string = "";
   let maxRetries: number = 10;
   let retries: number = 0;
   let success: boolean = false;
@@ -211,7 +212,8 @@ async function getCDCPublisher(urlParams: URLSearchParams | undefined): Promise<
       cdcApiRes = await axios.get(cdcApiUrl);
       logger.info(`CDC Internal API statusCode: ${cdcApiRes.status}`);
       publisher = cdcApiRes.data.publisherFilter.publisher;
-      pidStudies = cdcApiRes.data.pidStudies.forEach( (temp: {agency: string, pid: string}) => {
+      studyNumber = cdcApiRes.data.studyNumber;
+      /*pidStudies = cdcApiRes.data.pidStudies.forEach( (temp: {agency: string, pid: string}) => {
         switch(temp.agency){
           case "DOI":
           case "Handle":
@@ -228,7 +230,7 @@ async function getCDCPublisher(urlParams: URLSearchParams | undefined): Promise<
           default:
             return "NOT-DOI-Handle-URN-ARK";
         }
-    });
+    });*/
       success = true;
     }
     catch (error) {
@@ -241,10 +243,12 @@ async function getCDCPublisher(urlParams: URLSearchParams | undefined): Promise<
   if(retries >= maxRetries){
     logger.error(`Too many  request retries on internal CDC API.`);
     dashLogger.error(`Too many  request retries on internal CDC API, URL:${cdcApiUrl}, time:${new Date().toUTCString()}`);
-    publisher = "NOT-FETCHED-CDC-PUBLISHER";
+    if (publisher.trim().length == 0)
+      publisher = "NOT-FETCHED-CDC-PUBLISHER";
+    if (studyNumber.trim().length == 0)
+      studyNumber = "NOT-FETCHED-CDC-STUDYNUMBER";
   }
-
-  const cdcApiVars: StudyInfo = {publisher: publisher, pidStudies: pidStudies};
+  const cdcApiVars: StudyInfo = {publisher: publisher, studyNumber: studyNumber};
   return cdcApiVars;
 }
 
@@ -308,17 +312,17 @@ async function getFUJIResults(link: string, studyInfo: StudyInfo, fullDate: stri
   // TODO: CHECK FOR OTHER SP'S URI PARAMS
   if (link.includes("datacatalogue.cessda.eu")){
     fujiResults['uid'] = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + fullDate;
-    fujiResults['pid'] = studyInfo.pidStudies;
+    fujiResults['pid'] = studyInfo.studyNumber;
   }
   else if(link.includes("snd.gu.se") || link.includes("adp.fdv.uni-lj")){
     //fujiResults['uid'] = studyInfo.urlPath?.replaceAll('/', '-') + "-" + fullDate;
     fujiResults['uid'] = studyInfo.urlPath + "-" + fullDate;
     fujiResults['pid'] = studyInfo.urlPath;
   }
-  else // Dataverse cases
+  else{ // Dataverse cases
     fujiResults['uid'] = studyInfo.urlParams?.get('persistentId') + "-" + fullDate; 
     fujiResults['pid'] = studyInfo.urlParams?.get('persistentId');
-  
+  }
   return fujiResults;
 }
 

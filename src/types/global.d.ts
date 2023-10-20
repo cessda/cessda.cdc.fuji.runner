@@ -7,7 +7,7 @@ declare global {
    */
   interface StudyInfo {
     publisher?: string | undefined,
-    pidStudies?: string | undefined,
+    studyNumber?: string | undefined,
     urlParams?: URLSearchParams,
     urlPath?: string
   }
