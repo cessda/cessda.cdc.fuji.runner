@@ -129,8 +129,8 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
       studyInfo.publisher = hostname;
     }
     else{ // Dataverse cases
-      fileName = studyInfo.urlParams?.get('persistentId') + "-" + fullDate + ".json".replace(/[&\/\\#,+()$~%'":*?<>{}]/g,"-");
       //fileName = fileName.replace(/[&\/\\#,+()$~%'":*?<>{}]/g,"-");
+      fileName = studyInfo.urlParams?.get('persistentId') + "-" + fullDate + ".json".replace(/[&\/\\#,+()$~%'":*?<>{}]/g,"-");
       studyInfo.publisher = hostname;
     }
     //TODO: await 1 promise for both fujiResults and FAIREva results
@@ -163,7 +163,8 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
     'summary.score_percent.R1_3',
     'timestamp',
     'publisher',
-    'pidStudies'
+    'uid',
+    'pid'
   ];
   let opts = { fields };
   let transformOpts = { objectMode: true };
@@ -210,13 +211,22 @@ async function getCDCPublisher(urlParams: URLSearchParams | undefined): Promise<
       cdcApiRes = await axios.get(cdcApiUrl);
       logger.info(`CDC Internal API statusCode: ${cdcApiRes.status}`);
       publisher = cdcApiRes.data.publisherFilter.publisher;
-      pidStudies = cdcApiRes.data.pidStudies.forEach( (temp: {agency: string, pid: URL}) => {
-        //ask matthew priorities file
-        if (temp.agency == "DOI"){
-          return temp.pid.pathname.substring(1);
-        }
-        else{
-          return "NOT-FETCHED-CDC-PIDSTUDIES"
+      pidStudies = cdcApiRes.data.pidStudies.forEach( (temp: {agency: string, pid: string}) => {
+        switch(temp.agency){
+          case "DOI":
+          case "Handle":
+          case "URN":
+          case "ARK":
+            if (temp.pid.includes("http")){
+              let tempPID = <URL> <unknown>temp.pid;
+              return tempPID.pathname.substring(1);
+            }   
+            else{ //type of pidStudies is string
+              return temp.pid;
+            }
+          //TODO: also include other pids? i.e. "DANS-KNAW"
+          default:
+            return "NOT-DOI-Handle-URN-ARK";
         }
     });
       success = true;
@@ -298,12 +308,17 @@ async function getFUJIResults(link: string, studyInfo: StudyInfo, fullDate: stri
   // TODO: CHECK FOR OTHER SP'S URI PARAMS
   if (link.includes("datacatalogue.cessda.eu")){
     fujiResults['uid'] = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + fullDate;
-    fujiResults['pid'] = studyInfo.pidStudies + fullDate;
+    fujiResults['pid'] = studyInfo.pidStudies;
   }
-  else if(link.includes("snd.gu.se") || link.includes("adp.fdv.uni-lj"))
-    fujiResults['uid'] = studyInfo.urlPath?.replaceAll('/', '-') + "-" + fullDate;
+  else if(link.includes("snd.gu.se") || link.includes("adp.fdv.uni-lj")){
+    //fujiResults['uid'] = studyInfo.urlPath?.replaceAll('/', '-') + "-" + fullDate;
+    fujiResults['uid'] = studyInfo.urlPath + "-" + fullDate;
+    fujiResults['pid'] = studyInfo.urlPath;
+  }
   else // Dataverse cases
-    fujiResults['uid'] = studyInfo.urlParams?.get('persistentId') + "-" + fullDate; // dataverse case
+    //fujiResults['uid'] = studyInfo.urlParams?.get('persistentId') + "-" + fullDate; 
+    fujiResults['uid'] = studyInfo.urlParams?.get('persistentId') + "-" + fullDate; 
+    fujiResults['pid'] = studyInfo.urlParams?.get('persistentId');
   
   return fujiResults;
 }
@@ -326,7 +341,7 @@ async function resultsToElastic(fileName: string, fujiResults: JSON | undefined)
   }
 }
 
-function resultsToHDD(dir: string, fileName: string, fujiResults: JSON | undefined) {
+async function resultsToHDD(dir: string, fileName: string, fujiResults: JSON | undefined) {
   writeFile(`${dir}/${fileName}`, JSON.stringify(fujiResults, null, 4), (err) => {
     if (err) {
       logger.error(`Error writing to file: ${err}, filename:${fileName}`);
