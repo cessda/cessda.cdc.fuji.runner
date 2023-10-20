@@ -129,7 +129,6 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
       studyInfo.publisher = hostname;
     }
     else{ // Dataverse cases
-      //
       fileName = studyInfo.urlParams?.get('persistentId') + "-" + fullDate + ".json";
       fileName = fileName.replace(/[&\/\\#,+()$~%'":*?<>{}]/g,"-");
       studyInfo.publisher = hostname;
@@ -317,7 +316,6 @@ async function getFUJIResults(link: string, studyInfo: StudyInfo, fullDate: stri
     fujiResults['pid'] = studyInfo.urlPath;
   }
   else // Dataverse cases
-    //fujiResults['uid'] = studyInfo.urlParams?.get('persistentId') + "-" + fullDate; 
     fujiResults['uid'] = studyInfo.urlParams?.get('persistentId') + "-" + fullDate; 
     fujiResults['pid'] = studyInfo.urlParams?.get('persistentId');
   
