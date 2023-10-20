@@ -129,8 +129,9 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
       studyInfo.publisher = hostname;
     }
     else{ // Dataverse cases
-      //fileName = fileName.replace(/[&\/\\#,+()$~%'":*?<>{}]/g,"-");
-      fileName = studyInfo.urlParams?.get('persistentId') + "-" + fullDate + ".json".replace(/[&\/\\#,+()$~%'":*?<>{}]/g,"-");
+      //
+      fileName = studyInfo.urlParams?.get('persistentId') + "-" + fullDate + ".json";
+      fileName = fileName.replace(/[&\/\\#,+()$~%'":*?<>{}]/g,"-");
       studyInfo.publisher = hostname;
     }
     //TODO: await 1 promise for both fujiResults and FAIREva results
