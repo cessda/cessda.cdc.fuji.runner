@@ -134,7 +134,7 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
       studyInfo.publisher = hostname;
     }
     //TODO: await 1 promise for both fujiResults and FAIREva results
-    const fujiData: JSON | undefined = await getFUJIResults(site, studyInfo, fullDate);
+    const fujiData: JSON | string = await getFUJIResults(site, studyInfo, fullDate);
     resultsToElastic(fileName, fujiData);
     resultsToHDD(dir, fileName, fujiData);
     //uploadFromMemory(fileName, fujiResults).catch0(console.error); //Write-to-Cloud-Bucket function
@@ -252,15 +252,15 @@ async function getCDCPublisher(urlParams: URLSearchParams | undefined): Promise<
   return cdcApiVars;
 }
 
-async function getFUJIResults(link: string, studyInfo: StudyInfo, fullDate: string): Promise<JSON | undefined> {
+async function getFUJIResults(link: string, studyInfo: StudyInfo, fullDate: string): Promise<JSON | string> {
   let fujiRes: AxiosResponse<any, any>;
-  let fujiResults: any | undefined;
+  let fujiResults: any | string;
   let maxRetries: number = 10;
   let retries: number = 0;
   let success: boolean = false;
   while (retries <= maxRetries && !success) {
     try {
-      fujiRes = await axios.post(process.env['FUJI_API_LOCAL']!, {
+      fujiRes = await axios.post(process.env['FUJI_API']!, {
         "metadata_service_endpoint": "",
         "metadata_service_type": "",
         "object_identifier": link,
@@ -268,8 +268,8 @@ async function getFUJIResults(link: string, studyInfo: StudyInfo, fullDate: stri
         "use_datacite": true
       }, {
         auth: {
-          username: process.env['FUJI_USERNAME_LOCAL']!,
-          password: process.env['FUJI_PASSWORD_LOCAL']!
+          username: process.env['FUJI_USERNAME']!,
+          password: process.env['FUJI_PASSWORD']!
         }
       });
       logger.info(`FujiAPI statusCode: ${fujiRes.status}`);
@@ -292,7 +292,8 @@ async function getFUJIResults(link: string, studyInfo: StudyInfo, fullDate: stri
   if(retries >= maxRetries){
     logger.error(`Too many  request retries on FujiAPI.`);
     dashLogger.error(`Too many  request retries on FujiAPI, URL:${link}, time:${new Date().toUTCString()}`);
-    return undefined; //skip study assessment
+    fujiResults = `Too many  request retries on FujiAPI, URL:${link}, time:${new Date().toUTCString()}`;
+    return fujiResults; //skip study assessment
   }
   //Delete scores and logs from response that are not needed
   delete fujiResults['results'];
@@ -326,7 +327,7 @@ async function getFUJIResults(link: string, studyInfo: StudyInfo, fullDate: stri
   return fujiResults;
 }
 
-async function resultsToElastic(fileName: string, fujiResults: JSON | undefined) {
+async function resultsToElastic(fileName: string, fujiResults: JSON | string) {
   try {
     const elasticdoc = {
       index: 'fuji-results',
@@ -344,7 +345,7 @@ async function resultsToElastic(fileName: string, fujiResults: JSON | undefined)
   }
 }
 
-async function resultsToHDD(dir: string, fileName: string, fujiResults: JSON | undefined) {
+async function resultsToHDD(dir: string, fileName: string, fujiResults: JSON | string) {
   writeFile(`${dir}/${fileName}`, JSON.stringify(fujiResults, null, 4), (err) => {
     if (err) {
       logger.error(`Error writing to file: ${err}, filename:${fileName}`);
