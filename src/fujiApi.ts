@@ -286,7 +286,9 @@ async function getFUJIResults(studyInfo: StudyInfo, fullDate: string): Promise<J
         "metadata_service_type": "",
         "object_identifier": studyInfo.url,
         "test_debug": true,
-        "use_datacite": true
+        "use_datacite": true,
+        "auth_token": base64UsernamePassword,
+        "auth_token_type": "Basic"
       }, {
         auth: {
           username: process.env['FUJI_USERNAME']!,
