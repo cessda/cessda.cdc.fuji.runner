@@ -118,9 +118,9 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
   }
   //create directory for storing results per sitemap link
   let dir: string = '../outputs/'+hostname;
-  if (!existsSync(dir)){
+  if (!existsSync(dir))
     mkdirSync(dir, { recursive: true });
-  }
+  //create date of testing
   const runDate = new Date();
   const fullDate: string = [runDate.getFullYear(), runDate.getMonth() + 1, runDate.getDate(), runDate.getHours(), runDate.getMinutes(), runDate.getSeconds()].join('-');
   //Initiating CSV writer
@@ -151,7 +151,7 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
       studyInfo.publisher = hostname;
     }
     //TODO: await 1 promise for both fujiResults and FAIREva results
-    const fujiData: JSON | string = await getFUJIResults(site, studyInfo, fullDate);
+    const fujiData: JSON | string = await getFUJIResults(studyInfo, fullDate);
     resultsToElastic(studyInfo.fileName, fujiData);
     resultsToHDD(dir, studyInfo.fileName, fujiData);
     //uploadFromMemory(fileName, fujiResults).catch0(console.error); //Write-to-Cloud-Bucket function
@@ -273,7 +273,7 @@ async function getCDCApiInfo(studyInfo: StudyInfo): Promise<StudyInfo>{
   return cdcApiVars;
 }
 
-async function getFUJIResults(link: string, studyInfo: StudyInfo, fullDate: string): Promise<JSON | string> {
+async function getFUJIResults(studyInfo: StudyInfo, fullDate: string): Promise<JSON | string> {
   let fujiRes: AxiosResponse<any, any>;
   let fujiResults: any | string;
   let maxRetries: number = 10;
@@ -284,7 +284,7 @@ async function getFUJIResults(link: string, studyInfo: StudyInfo, fullDate: stri
       fujiRes = await axios.post(process.env['FUJI_API']!, {
         "metadata_service_endpoint": "",
         "metadata_service_type": "",
-        "object_identifier": link,
+        "object_identifier": studyInfo.url,
         "test_debug": true,
         "use_datacite": true
       }, {
@@ -299,12 +299,12 @@ async function getFUJIResults(link: string, studyInfo: StudyInfo, fullDate: stri
     }
     catch (error) {
       if (axios.isAxiosError(error)) {
-        logger.error(`AxiosError at FujiAPI: ${error.message}, Response Status:${error.response?.status}, URL:${link}`);
-        dashLogger.error(`AxiosError at FujiAPI: ${error.message}, Response Status:${error.response?.status}, URL:${link}, time:${new Date().toUTCString()}`);
+        logger.error(`AxiosError at FujiAPI: ${error.message}, Response Status:${error.response?.status}, URL:${studyInfo.url}`);
+        dashLogger.error(`AxiosError at FujiAPI: ${error.message}, Response Status:${error.response?.status}, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
       }
       else {
-        logger.error(`Error at FujiAPI: ${error}, URL:${link}`);
-        dashLogger.error(`Error at FujiAPI: ${error}, URL:${link}, time:${new Date().toUTCString()}`);
+        logger.error(`Error at FujiAPI: ${error}, URL:${studyInfo.url}`);
+        dashLogger.error(`Error at FujiAPI: ${error}, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
       }
       await new Promise(resolve => setTimeout(resolve, 5000)); //delay new retry by 5sec
     }
@@ -312,8 +312,8 @@ async function getFUJIResults(link: string, studyInfo: StudyInfo, fullDate: stri
   }
   if(retries >= maxRetries){
     logger.error(`Too many  request retries on FujiAPI.`);
-    dashLogger.error(`Too many  request retries on FujiAPI, URL:${link}, time:${new Date().toUTCString()}`);
-    fujiResults = `Too many  request retries on FujiAPI, URL:${link}, time:${new Date().toUTCString()}`;
+    dashLogger.error(`Too many  request retries on FujiAPI, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
+    fujiResults = `Too many  request retries on FujiAPI, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
     return fujiResults; //skip study assessment
   }
   //Delete scores and logs from response that are not needed
@@ -332,11 +332,11 @@ async function getFUJIResults(link: string, studyInfo: StudyInfo, fullDate: stri
   fujiResults['publisher'] = studyInfo.publisher;
   fujiResults['dateID'] = "FujiRun-" + fullDate;
   // TODO: CHECK FOR OTHER SP'S URI PARAMS
-  if (link.includes("datacatalogue.cessda.eu") || link.includes("datacatalogue-staging.cessda.eu")){
+  if (studyInfo.url?.includes("datacatalogue.cessda.eu") || studyInfo.url?.includes("datacatalogue-staging.cessda.eu")){
     fujiResults['uid'] = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + fullDate;
     fujiResults['pid'] = studyInfo.studyNumber;
   }
-  else if(link.includes("snd.gu.se") || link.includes("adp.fdv.uni-lj")){
+  else if(studyInfo.url?.includes("snd.gu.se") || studyInfo.url?.includes("adp.fdv.uni-lj")){
     //fujiResults['uid'] = studyInfo.urlPath?.replaceAll('/', '-') + "-" + fullDate;
     fujiResults['uid'] = studyInfo.urlPath + "-" + fullDate;
     fujiResults['pid'] = studyInfo.urlPath;
