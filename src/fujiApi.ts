@@ -28,6 +28,19 @@ const client = elasticsearchUsername && elasticsearchPassword ? new Client({
   : new Client({
     node: elasticsearchUrl,
   })
+  
+  //To use if testing against CDC staging
+  const cdcusername = process.env['CDC_USERNAME'];
+  const cdcpassword = process.env['CDC_PASSWORD'];
+
+  const usernamePasswordBuffer = Buffer.from(
+    `${cdcusername}:${cdcpassword}`,
+    "utf-8"
+  );
+  const base64UsernamePassword = usernamePasswordBuffer.toString("base64");
+  const requestHeaders = {
+    Authorization: `Basic ${base64UsernamePassword}`,
+  };
 
 // Create a google client with explicit credentials - jsonFile
 /*const storage = new Storage({
@@ -52,7 +65,8 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
   //prepare request for gathering all study links
   const cdcLinks = new Sitemapper({
     url: sitemapLine.toString(),
-    timeout: 5000, // 5 seconds
+    timeout: 5000, // 5 seconds,
+    requestHeaders
   });
   let sitemapRes: SitemapperResponse | undefined;
   try {
@@ -90,6 +104,9 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
     case "datacatalogue.cessda.eu":
       sitemapResFiltered = sitemapRes.sites.filter(temp => temp !== 'https://datacatalogue.cessda.eu/');
     break;
+    case "datacatalogue-staging.cessda.eu":
+      sitemapResFiltered = sitemapRes.sites.filter(temp => temp !== 'https://datacatalogue-staging.cessda.eu/');
+    break;
     case "www.adp.fdv.uni-lj.si":
       sitemapResFiltered= sitemapRes.sites.filter((temp) => {
         return temp.includes("opisi");
@@ -113,30 +130,30 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
   for (const site of sitemapResFiltered) {
     logger.info(`Processing study: ${site}`);
     const urlLink: URL = new URL(site);
-    let fileName: string;
     let studyInfo: StudyInfo = {
+      url: site,
       urlParams: urlLink.searchParams,
       urlPath: urlLink.pathname.substring(1)
     };  
-    if (site.includes("datacatalogue.cessda.eu")){  //get the publisher from CDC Internal API
-      fileName = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + fullDate + ".json";
-      const temp: StudyInfo = await getCDCPublisher(studyInfo.urlParams);
+    if (site.includes("datacatalogue.cessda.eu") || site.includes("datacatalogue-staging.cessda.eu")){  //get the publisher + studyNumber from CDC Internal API
+      studyInfo.fileName = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + fullDate + ".json";
+      const temp: StudyInfo = await getCDCApiInfo(studyInfo);
       studyInfo.publisher = temp.publisher;
       studyInfo.studyNumber = temp.studyNumber;
     }
     else if(site.includes("snd.gu.se") || site.includes("adp.fdv.uni-lj")){
-      fileName = studyInfo.urlPath?.replaceAll('/', '-')+".json";
+      studyInfo.fileName = studyInfo.urlPath?.replaceAll('/', '-')+".json";
       studyInfo.publisher = hostname;
     }
     else{ // Dataverse cases
-      fileName = studyInfo.urlParams?.get('persistentId') + "-" + fullDate + ".json";
-      fileName = fileName.replace(/[&\/\\#,+()$~%'":*?<>{}]/g,"-");
+      studyInfo.fileName = studyInfo.urlParams?.get('persistentId') + "-" + fullDate + ".json";
+      studyInfo.fileName = studyInfo.fileName.replace(/[&\/\\#,+()$~%'":*?<>{}]/g,"-");
       studyInfo.publisher = hostname;
     }
     //TODO: await 1 promise for both fujiResults and FAIREva results
     const fujiData: JSON | string = await getFUJIResults(site, studyInfo, fullDate);
-    resultsToElastic(fileName, fujiData);
-    resultsToHDD(dir, fileName, fujiData);
+    resultsToElastic(studyInfo.fileName, fujiData);
+    resultsToHDD(dir, studyInfo.fileName, fujiData);
     //uploadFromMemory(fileName, fujiResults).catch0(console.error); //Write-to-Cloud-Bucket function
     csvFUJI.push(fujiData); //Push data to CSV writer
   }
@@ -198,18 +215,22 @@ async function elasticIndexCheck() {
   }
 }
 
-async function getCDCPublisher(urlParams: URLSearchParams | undefined): Promise<StudyInfo>{
-  const cdcApiUrl = 'https://datacatalogue.cessda.eu/api/json/cmmstudy_' + urlParams?.get('lang') + '/' + urlParams?.get('q');
+async function getCDCApiInfo(studyInfo: StudyInfo): Promise<StudyInfo>{
+  const cdcApiUrl = 'https://datacatalogue.cessda.eu/api/json/cmmstudy_' + studyInfo.urlParams?.get('lang') + '/' + studyInfo.urlParams?.get('q');
+  const cdcStagingApiUrl = 'https://datacatalogue-staging.cessda.eu/api/json/cmmstudy_' + studyInfo.urlParams?.get('lang') + '/' + studyInfo.urlParams?.get('q');
   let cdcApiRes: AxiosResponse<any, any>;
   let publisher: string = "";
-  //let pidStudies: string = "NOT-FETCHED-CDC-PIDSTUDIES";
+  //let pidStudies: string = "";
   let studyNumber: string = "";
   let maxRetries: number = 10;
   let retries: number = 0;
   let success: boolean = false;
   while (retries <= maxRetries && !success) {
     try {
-      cdcApiRes = await axios.get(cdcApiUrl);
+      if (studyInfo.url?.includes("datacatalogue-staging.cessda.eu"))
+        cdcApiRes = await axios.get(cdcStagingApiUrl, { headers: requestHeaders });
+      else
+        cdcApiRes = await axios.get(cdcApiUrl);
       logger.info(`CDC Internal API statusCode: ${cdcApiRes.status}`);
       publisher = cdcApiRes.data.publisherFilter.publisher;
       studyNumber = cdcApiRes.data.studyNumber;
@@ -311,7 +332,7 @@ async function getFUJIResults(link: string, studyInfo: StudyInfo, fullDate: stri
   fujiResults['publisher'] = studyInfo.publisher;
   fujiResults['dateID'] = "FujiRun-" + fullDate;
   // TODO: CHECK FOR OTHER SP'S URI PARAMS
-  if (link.includes("datacatalogue.cessda.eu")){
+  if (link.includes("datacatalogue.cessda.eu") || link.includes("datacatalogue-staging.cessda.eu")){
     fujiResults['uid'] = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + fullDate;
     fujiResults['pid'] = studyInfo.studyNumber;
   }

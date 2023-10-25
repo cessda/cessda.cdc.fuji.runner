@@ -8,8 +8,10 @@ declare global {
   interface StudyInfo {
     publisher?: string | undefined,
     studyNumber?: string | undefined,
+    url?: string,
     urlParams?: URLSearchParams,
-    urlPath?: string
+    urlPath?: string,
+    fileName?: string
   }
 
 }
