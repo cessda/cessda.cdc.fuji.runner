@@ -1,8 +1,8 @@
 {
   "name": "cessda.cdc.fuji.runner",
   "version": "1.0.0",
-  "description": "FujiApiConnector for CDC FAIR assessment",
-  "main": "src/fujiApi.ts",
+  "description": "API Runner for CDC FAIR assessment",
+  "main": "src/main.ts",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

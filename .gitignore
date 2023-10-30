@@ -6,10 +6,20 @@
 *.exe
 *.o
 *.so
-fujiApi.js
-fujiApi.js.map
-logger.js
-logger.js.map
+/src/main.js
+/src/main.js.map
+/src/logger.js
+/src/logger.js.map
+/src/helpers/cdcInfoAPI.js
+/src/helpers/cdcInfoAPI.js.map
+/src/helpers/esFunctions.js
+/src/helpers/esFunctions.js.map
+/src/helpers/fujiAPI.js
+/src/helpers/fujiAPI.js.map
+/src/helpers/writeToFiles.js
+/src/helpers/writeToFiles.js.map
+/src/helpers/evaAPI.js
+/src/helpers/evaAPI.js.map
 
 # Packages #
 ############
