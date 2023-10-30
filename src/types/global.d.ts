@@ -11,7 +11,8 @@ declare global {
     url?: string,
     urlParams?: URLSearchParams,
     urlPath?: string,
-    fileName?: string
+    fileName?: string,
+    testDate: string
   }
 
 }

@@ -1,7 +1,7 @@
 import axios, { type AxiosResponse } from "axios";
 import { logger, dashLogger } from "../logger.js";
 
-export async function getFUJIResults(studyInfo: StudyInfo, base64UsernamePassword: string, fullDate: string): Promise<JSON | string> {
+export async function getFUJIResults(studyInfo: StudyInfo, base64UsernamePassword: string): Promise<JSON | string> {
     let fujiRes: AxiosResponse<any, any>;
     let fujiResults: any | string;
     let maxRetries: number = 10;
@@ -9,7 +9,7 @@ export async function getFUJIResults(studyInfo: StudyInfo, base64UsernamePasswor
     let success: boolean = false;
     while (retries <= maxRetries && !success) {
       try {
-        fujiRes = await axios.post(process.env['FUJI_API']!, {
+        fujiRes = await axios.post(process.env['FUJI_API_LOCAL']!, {
           "metadata_service_endpoint": "",
           "metadata_service_type": "",
           "object_identifier": studyInfo.url,
@@ -19,8 +19,8 @@ export async function getFUJIResults(studyInfo: StudyInfo, base64UsernamePasswor
           "auth_token_type": "Basic"
         }, {
           auth: {
-            username: process.env['FUJI_USERNAME']!,
-            password: process.env['FUJI_PASSWORD']!
+            username: process.env['FUJI_USERNAME_LOCAL']!,
+            password: process.env['FUJI_PASSWORD_LOCAL']!
           }
         });
         logger.info(`FujiAPI statusCode: ${fujiRes.status}`);
@@ -60,19 +60,19 @@ export async function getFUJIResults(studyInfo: StudyInfo, base64UsernamePasswor
     fujiResults['summary']['score_percent']['R1_3'] = fujiResults['summary']['score_percent']['R1.3'];
     delete fujiResults['summary']['score_percent']['R1.3'];
     fujiResults['publisher'] = studyInfo.publisher;
-    fujiResults['dateID'] = "FujiRun-" + fullDate;
+    fujiResults['dateID'] = "FujiRun-" + studyInfo.testDate;
     // TODO: CHECK FOR OTHER SP'S URI PARAMS
     if (studyInfo.url?.includes("datacatalogue.cessda.eu") || studyInfo.url?.includes("datacatalogue-staging.cessda.eu")){
-      fujiResults['uid'] = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + fullDate;
+      fujiResults['uid'] = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + studyInfo.testDate;
       fujiResults['pid'] = studyInfo.studyNumber;
     }
     else if(studyInfo.url?.includes("snd.gu.se") || studyInfo.url?.includes("adp.fdv.uni-lj")){
       //fujiResults['uid'] = studyInfo.urlPath?.replaceAll('/', '-') + "-" + fullDate;
-      fujiResults['uid'] = studyInfo.urlPath + "-" + fullDate;
+      fujiResults['uid'] = studyInfo.urlPath + "-" + studyInfo.testDate;
       fujiResults['pid'] = studyInfo.urlPath;
     }
     else{ // Dataverse cases
-      fujiResults['uid'] = studyInfo.urlParams?.get('persistentId') + "-" + fullDate; 
+      fujiResults['uid'] = studyInfo.urlParams?.get('persistentId') + "-" + studyInfo.testDate; 
       fujiResults['pid'] = studyInfo.urlParams?.get('persistentId');
     }
     return fujiResults;

@@ -57,6 +57,8 @@ export async function getCDCApiInfo(studyInfo: StudyInfo, requestHeaders: any): 
       if (studyNumber.trim().length == 0)
         studyNumber = "NOT-FETCHED-CDC-STUDYNUMBER";
     }
-    const cdcApiVars: StudyInfo = {publisher: publisher, studyNumber: studyNumber};
-    return cdcApiVars;
+    //add results to interface and return it
+    studyInfo.publisher = publisher;
+    studyInfo.studyNumber = studyNumber;
+    return studyInfo;
   }

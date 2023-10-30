@@ -44,7 +44,7 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
     return;
   }
   logger.info(`Links Collected: ${sitemapRes.sites.length}`);
-  // TODO: `REMOVE RECORDS THAT DONT CONTAIN DOI IN URL + NEED TO CHECK FOR OTHER SP DOI REFERENCES + CESSDA
+  // TODO: `REMOVE RECORDS THAT DONT CONTAIN STUDIES (IDENTIFIER IN URL)
   let sitemapResFiltered: string[] = [];
   switch (hostname) {
     case "data.aussda.at":
@@ -100,10 +100,11 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
     let studyInfo: StudyInfo = {
       url: site,
       urlParams: urlLink.searchParams,
-      urlPath: urlLink.pathname.substring(1)
+      urlPath: urlLink.pathname.substring(1),
+      testDate: fullDate
     };  
     if (site.includes("datacatalogue.cessda.eu") || site.includes("datacatalogue-staging.cessda.eu")){  //get the publisher + studyNumber from CDC Internal API
-      studyInfo.fileName = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + fullDate + ".json";
+      studyInfo.fileName = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + studyInfo.testDate + ".json";
       const temp: StudyInfo = await getCDCApiInfo(studyInfo, requestHeaders);
       studyInfo.publisher = temp.publisher;
       studyInfo.studyNumber = temp.studyNumber;
@@ -113,12 +114,12 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
       studyInfo.publisher = hostname;
     }
     else{ // Dataverse cases
-      studyInfo.fileName = studyInfo.urlParams?.get('persistentId') + "-" + fullDate + ".json";
+      studyInfo.fileName = studyInfo.urlParams?.get('persistentId') + "-" + studyInfo.testDate + ".json";
       studyInfo.fileName = studyInfo.fileName.replace(/[&\/\\#,+()$~%'":*?<>{}]/g,"-");
       studyInfo.publisher = hostname;
     }
     //TODO: await 1 promise for both fujiResults and FAIREva results
-    const fujiData: JSON | string = await getFUJIResults(studyInfo, base64UsernamePassword, fullDate);
+    const fujiData: JSON | string = await getFUJIResults(studyInfo, base64UsernamePassword);
     resultsToElastic(studyInfo.fileName, fujiData);
     resultsToHDD(dir, studyInfo.fileName, fujiData);
     //uploadFromMemory(fileName, fujiResults).catch0(console.error); //Write-to-Cloud-Bucket function
