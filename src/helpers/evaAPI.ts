@@ -40,36 +40,28 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
       return evaResults; //skip study assessment
     }
     // TODO: something with the actual data...
-    console.log(evaResults);
+    let evaObjResults: JSON = JSON.parse(evaResults);
+    console.log(JSON.stringify(evaObjResults,null,'\t'));
     /*
-    delete fujiResults['results'];
-    delete fujiResults.summary.maturity;
-    delete fujiResults.summary.score_earned;
-    delete fujiResults.summary.score_total;
-    delete fujiResults.summary.status_passed;
-    delete fujiResults.summary.status_total;
-    fujiResults['summary']['score_percent']['R1_1'] = fujiResults['summary']['score_percent']['R1.1'];
-    delete fujiResults['summary']['score_percent']['R1.1'];
-    fujiResults['summary']['score_percent']['R1_2'] = fujiResults['summary']['score_percent']['R1.2'];
-    delete fujiResults['summary']['score_percent']['R1.2'];
-    fujiResults['summary']['score_percent']['R1_3'] = fujiResults['summary']['score_percent']['R1.3'];
-    delete fujiResults['summary']['score_percent']['R1.3'];
-    fujiResults['publisher'] = studyInfo.publisher;
-    fujiResults['dateID'] = "FujiRun-" + fullDate;
+    delete evaObjResults['results'];
+    delete evaObjResults.summary.maturity;
+    evaObjResults['summary']['score_percent']['R1_1'] = fujiResults['summary']['score_percent']['R1.1'];
+    evaObjResults['publisher'] = studyInfo.publisher;
+    evaObjResults['dateID'] = "FujiRun-" + fullDate;
     // TODO: CHECK FOR OTHER SP'S URI PARAMS
     if (studyInfo.url?.includes("datacatalogue.cessda.eu") || studyInfo.url?.includes("datacatalogue-staging.cessda.eu")){
-      fujiResults['uid'] = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + fullDate;
-      fujiResults['pid'] = studyInfo.studyNumber;
+      evaObjResults['uid'] = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + fullDate;
+      evaObjResults['pid'] = studyInfo.studyNumber;
     }
     else if(studyInfo.url?.includes("snd.gu.se") || studyInfo.url?.includes("adp.fdv.uni-lj")){
-      //fujiResults['uid'] = studyInfo.urlPath?.replaceAll('/', '-') + "-" + fullDate;
-      fujiResults['uid'] = studyInfo.urlPath + "-" + fullDate;
-      fujiResults['pid'] = studyInfo.urlPath;
+      //evaObjResults['uid'] = studyInfo.urlPath?.replaceAll('/', '-') + "-" + fullDate;
+      evaObjResults['uid'] = studyInfo.urlPath + "-" + fullDate;
+      evaObjResults['pid'] = studyInfo.urlPath;
     }
     else{ // Dataverse cases
-      fujiResults['uid'] = studyInfo.urlParams?.get('persistentId') + "-" + fullDate; 
-      fujiResults['pid'] = studyInfo.urlParams?.get('persistentId');
+      evaObjResults['uid'] = studyInfo.urlParams?.get('persistentId') + "-" + fullDate; 
+      evaObjResults['pid'] = studyInfo.urlParams?.get('persistentId');
     }
     */
-    return evaResults;
+    return evaObjResults;
   }
