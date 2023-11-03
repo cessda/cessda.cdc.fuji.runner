@@ -39,28 +39,25 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
       evaResults = `Too many  request retries on EVA API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
       return evaResults; //skip study assessment
     }
-    let evaObjResults: JSON = JSON.parse(evaResults);
-    console.log(JSON.stringify(evaObjResults,null,'\t'));
-    /*
-    delete evaObjResults['results'];
-    delete evaObjResults.summary.maturity;
-    evaObjResults['summary']['score_percent']['R1_1'] = fujiResults['summary']['score_percent']['R1.1'];
+    let evaObjResults: JSON | any = JSON.parse(evaResults);
+    //console.log(JSON.stringify(evaObjResults,null,'\t'));
+    //Delete scores and logs from response that are not needed
+    //TODO: overall FAIR score???
     evaObjResults['publisher'] = studyInfo.publisher;
-    evaObjResults['dateID'] = "FujiRun-" + fullDate;
+    evaObjResults['dateID'] = "EVARun-" + studyInfo.assessDate;
     // TODO: CHECK FOR OTHER SP'S URI PARAMS
     if (studyInfo.url?.includes("datacatalogue.cessda.eu") || studyInfo.url?.includes("datacatalogue-staging.cessda.eu")){
-      evaObjResults['uid'] = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + fullDate;
-      evaObjResults['pid'] = studyInfo.studyNumber;
+      evaObjResults['uid'] = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + studyInfo.assessDate;
+      evaObjResults['pid'] = studyInfo.cdcStudyNumber;
     }
     else if(studyInfo.url?.includes("snd.gu.se") || studyInfo.url?.includes("adp.fdv.uni-lj")){
       //evaObjResults['uid'] = studyInfo.urlPath?.replaceAll('/', '-') + "-" + fullDate;
-      evaObjResults['uid'] = studyInfo.urlPath + "-" + fullDate;
-      evaObjResults['pid'] = studyInfo.urlPath;
+      evaObjResults['uid'] = studyInfo.spID + "-" + studyInfo.assessDate;
+      evaObjResults['pid'] = studyInfo.spID;
     }
     else{ // Dataverse cases
-      evaObjResults['uid'] = studyInfo.urlParams?.get('persistentId') + "-" + fullDate; 
+      evaObjResults['uid'] = studyInfo.urlParams?.get('persistentId') + "-" + studyInfo.assessDate; 
       evaObjResults['pid'] = studyInfo.urlParams?.get('persistentId');
     }
-    */
     return evaObjResults;
   }

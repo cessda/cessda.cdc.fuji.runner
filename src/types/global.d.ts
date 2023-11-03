@@ -10,7 +10,7 @@ declare global {
     urlParams?: URLSearchParams,
     urlPath?: string,
     publisher?: string | undefined,
-    spID?: string | null,
+    spID?: string | null | undefined,
     cdcID?: string | null,
     cdcStudyNumber?: string | undefined,
     oaiLink?: string,

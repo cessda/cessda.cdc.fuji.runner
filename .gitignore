@@ -20,6 +20,8 @@
 /src/helpers/writeToFiles.js.map
 /src/helpers/evaAPI.js
 /src/helpers/evaAPI.js.map
+/src/helpers/writeToCSV.js
+/src/helpers/writeToCSV.js.map
 
 # Packages #
 ############

@@ -13,7 +13,7 @@ export async function getFUJIResults(studyInfo: StudyInfo, base64UsernamePasswor
           "metadata_service_endpoint": "",
           "metadata_service_type": "",
           "object_identifier": studyInfo.url,
-          "test_debug": true,
+          "test_debug": false,
           "use_datacite": true,
           "auth_token": base64UsernamePassword,
           "auth_token_type": "Basic"
@@ -67,9 +67,8 @@ export async function getFUJIResults(studyInfo: StudyInfo, base64UsernamePasswor
       fujiResults['pid'] = studyInfo.cdcStudyNumber;
     }
     else if(studyInfo.url?.includes("snd.gu.se") || studyInfo.url?.includes("adp.fdv.uni-lj")){
-      //fujiResults['uid'] = studyInfo.urlPath?.replaceAll('/', '-') + "-" + fullDate;
-      fujiResults['uid'] = studyInfo.urlPath + "-" + studyInfo.assessDate;
-      fujiResults['pid'] = studyInfo.urlPath;
+      fujiResults['uid'] = studyInfo.spID + "-" + studyInfo.assessDate;
+      fujiResults['pid'] = studyInfo.spID;
     }
     else{ // Dataverse cases
       fujiResults['uid'] = studyInfo.urlParams?.get('persistentId') + "-" + studyInfo.assessDate; 

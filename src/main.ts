@@ -2,9 +2,7 @@ import * as dotenv from 'dotenv'
 import * as fsPromise from 'fs/promises';
 import Sitemapper, { type SitemapperResponse } from 'sitemapper';
 import { URL } from 'url';
-import { createWriteStream, existsSync, mkdirSync } from 'fs';
-import { Transform } from "json2csv";
-import { parseAsync } from "json2csv";
+import { existsSync, mkdirSync } from 'fs';
 import { Readable } from 'stream';
 import { dashLogger, logger } from "./helpers/logger.js";
 import { getCDCApiInfo } from './helpers/cdcInfoAPI.js';
@@ -12,6 +10,7 @@ import { getFUJIResults } from './helpers/fujiAPI.js';
 import { getEVAResults } from './helpers/evaAPI.js';
 import { elasticIndexCheck, resultsToElastic } from './helpers/esFunctions.js';
 import { resultsToHDD, uploadFromMemory } from './helpers/writeToFiles.js';
+import { resultsToCSV } from './helpers/writeToCSV.js';
 dotenv.config({ path: '../.env' })
 
 //To use if testing against CDC staging
@@ -129,8 +128,15 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
       studyInfo.publisher = temp.publisher;
       studyInfo.cdcStudyNumber = temp.cdcStudyNumber;
     }
-    else if(site.includes("snd.gu.se") || site.includes("adp.fdv.uni-lj")){
-      // TODO: add studyInfo.spID
+    else if(site.includes("adp.fdv.uni-lj")){
+      let pathArray: string[] = studyInfo.urlPath.split('/');
+      studyInfo.spID = pathArray[pathArray.length-2]
+      studyInfo.fileName = studyInfo.urlPath?.replaceAll('/', '-')+".json";
+      studyInfo.publisher = hostname;
+    }
+    else if(site.includes("snd.gu.se")){
+      let pathArray: string[] = studyInfo.urlPath.split('/');
+      studyInfo.spID = pathArray[pathArray.length-1]
       studyInfo.fileName = studyInfo.urlPath?.replaceAll('/', '-')+".json";
       studyInfo.publisher = hostname;
     }
@@ -141,54 +147,19 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
       studyInfo.publisher = hostname;
     }
     //get results from EVA and FUJI API
-    const [evaData, fujiData] = await Promise.allSettled([getEVAResults(studyInfo), getFUJIResults(studyInfo, base64UsernamePassword)]);
-    resultsToElastic("FUJI-"+studyInfo.fileName, fujiData);
+    let [evaData, fujiData] = await Promise.allSettled([getEVAResults(studyInfo), getFUJIResults(studyInfo, base64UsernamePassword)]);
     resultsToElastic("EVA-"+studyInfo.fileName, evaData);
-    resultsToHDD(dir, "FUJI-"+studyInfo.fileName, fujiData);
     resultsToHDD(dir, "EVA-"+studyInfo.fileName, evaData);
+    resultsToElastic("FUJI-"+studyInfo.fileName, fujiData);
+    resultsToHDD(dir, "FUJI-"+studyInfo.fileName, fujiData);
+    
     //uploadFromMemory(fileName, fujiResults).catch0(console.error); //Write-to-Cloud-Bucket function
     csvFUJI.push(fujiData); //Push FUJI data to CSV writer
     csvEVA.push(evaData); //Push EVA data to CSV writer
   }
   
-  //prepare results to be parsed to csv
-  csvFUJI.push(null);
-  csvEVA.push(null);
-  const fujiOutputLocal = createWriteStream(`../outputs/CSV-FUJI_${hostname}_${studyInfo.assessDate}.csv`, { encoding: 'utf8' });
-  const evaOutputLocal = createWriteStream(`../outputs/CSV-EVA_${hostname}_${studyInfo.assessDate}.csv`, { encoding: 'utf8' });
-  let fields = [
-    'request.object_identifier',
-    'summary.score_percent.A',
-    'summary.score_percent.A1',
-    'summary.score_percent.F',
-    'summary.score_percent.F1',
-    'summary.score_percent.F2',
-    'summary.score_percent.F3',
-    'summary.score_percent.F4',
-    'summary.score_percent.FAIR',
-    'summary.score_percent.I',
-    'summary.score_percent.I1',
-    'summary.score_percent.I2',
-    'summary.score_percent.I3',
-    'summary.score_percent.R',
-    "summary.score_percent.R1",
-    'summary.score_percent.R1_1',
-    'summary.score_percent.R1_2',
-    'summary.score_percent.R1_3',
-    'timestamp',
-    'publisher',
-    'uid',
-    'pid'
-  ];
-  let opts = { fields };
-  let transformOpts = { objectMode: true };
-  let json2csv = new Transform(opts, transformOpts);
-  let processor = csvFUJI.pipe(json2csv).pipe(fujiOutputLocal);
-  try {
-    await parseAsync(processor, opts);
-  } catch (err) {
-    logger.error(`CSV writer Error: ${err}`)
-  }
+  //parse results to CSV
+  resultsToCSV(csvFUJI, csvEVA, hostname, studyInfo.assessDate);
   logger.info(`Finished sitemap: ${sitemapLine}`);
   dashLogger.info(`Finished sitemap: ${sitemapLine}, time:${new Date().toUTCString()}`);
 };
