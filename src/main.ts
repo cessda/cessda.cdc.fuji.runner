@@ -1,14 +1,15 @@
+import * as dotenv from 'dotenv'
+import * as fsPromise from 'fs/promises';
 import Sitemapper, { type SitemapperResponse } from 'sitemapper';
 import { URL } from 'url';
 import { createWriteStream, existsSync, mkdirSync } from 'fs';
 import { Transform } from "json2csv";
 import { parseAsync } from "json2csv";
 import { Readable } from 'stream';
-import * as dotenv from 'dotenv'
-import * as fsPromise from 'fs/promises';
-import { dashLogger, logger } from "./logger.js";
+import { dashLogger, logger } from "./helpers/logger.js";
 import { getCDCApiInfo } from './helpers/cdcInfoAPI.js';
 import { getFUJIResults } from './helpers/fujiAPI.js';
+import { getEVAResults } from './helpers/evaAPI.js';
 import { elasticIndexCheck, resultsToElastic } from './helpers/esFunctions.js';
 import { resultsToHDD, uploadFromMemory } from './helpers/writeToFiles.js';
 dotenv.config({ path: '../.env' })
@@ -28,7 +29,12 @@ const requestHeaders = {
 
 async function apiRunner(sitemapLine: URL): Promise<void> {
   const hostname = sitemapLine.hostname;
-  //prepare request for gathering all study links
+  //create date of testing
+  const runDate = new Date();
+  let studyInfo: StudyInfo = {
+    assessDate: [runDate.getFullYear(), runDate.getMonth() + 1, runDate.getDate(), runDate.getHours(), runDate.getMinutes(), runDate.getSeconds()].join('-')
+  };
+  //prepare request for gathering all url's existing on sitemap
   const cdcLinks = new Sitemapper({
     url: sitemapLine.toString(),
     timeout: 5000, // 5 seconds,
@@ -44,91 +50,111 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
     return;
   }
   logger.info(`Links Collected: ${sitemapRes.sites.length}`);
-  // TODO: `REMOVE RECORDS THAT DONT CONTAIN STUDIES (IDENTIFIER IN URL)
+  // TODO: `REMOVE URL's THAT DONT CONTAIN STUDIES (IDENTIFIER IN URL) + INCLUDE OAI LINK
   let sitemapResFiltered: string[] = [];
   switch (hostname) {
-    case "data.aussda.at":
+    case "data.aussda.at": {
+      studyInfo.oaiLink = "https://data.aussda.at/oai";
+      sitemapResFiltered= sitemapRes.sites.filter((temp) => {
+        return temp.includes("persistentId");
+      }); 
+    }
+    break;
+    case "datacatalogue.sodanet.gr": {
+      studyInfo.oaiLink = "https://datacatalogue.sodanet.gr/oai";
       sitemapResFiltered= sitemapRes.sites.filter((temp) => {
         return temp.includes("persistentId");
       });
+    }
     break;
-    case "datacatalogue.sodanet.gr":
+    case "ssh.datastations.nl": {
+      studyInfo.oaiLink = "https://ssh.datastations.nl/oai";
       sitemapResFiltered= sitemapRes.sites.filter((temp) => {
         return temp.includes("persistentId");
       });
+    }
     break;
-    case "ssh.datastations.nl":
+    case "sodha.be": {
+      studyInfo.oaiLink = "https://www.sodha.be/oai";
       sitemapResFiltered= sitemapRes.sites.filter((temp) => {
         return temp.includes("persistentId");
       });
+    }
     break;
-    case "sodha.be":
-      sitemapResFiltered= sitemapRes.sites.filter((temp) => {
-        return temp.includes("persistentId");
-      });
-    break;
-    case "datacatalogue.cessda.eu":
+    case "datacatalogue.cessda.eu": {
+      studyInfo.oaiLink = "https://datacatalogue.cessda.eu/oai-pmh/v0/oai";
       sitemapResFiltered = sitemapRes.sites.filter(temp => temp !== 'https://datacatalogue.cessda.eu/');
+    }
     break;
-    case "datacatalogue-staging.cessda.eu":
+    case "datacatalogue-staging.cessda.eu": {
+      studyInfo.oaiLink = "https://datacatalogue-staging.cessda.eu/oai-pmh/v0/oai";
       sitemapResFiltered = sitemapRes.sites.filter(temp => temp !== 'https://datacatalogue-staging.cessda.eu/');
+    }
     break;
-    case "www.adp.fdv.uni-lj.si":
+    case "www.adp.fdv.uni-lj.si": {
+      studyInfo.oaiLink = "https://www.adp.fdv.uni-lj.si/v0/oai";
       sitemapResFiltered= sitemapRes.sites.filter((temp) => {
         return temp.includes("opisi");
       });
+    }
     break;
-    case "snd.gu.se":
+    case "snd.gu.se": {
+      studyInfo.oaiLink = "https://snd.gu.se/en/oai-pmh";
       sitemapResFiltered = sitemapRes.sites;
+    }
     break;
   }
   //create directory for storing results per sitemap link
   let dir: string = '../outputs/'+hostname;
   if (!existsSync(dir))
     mkdirSync(dir, { recursive: true });
-  //create date of testing
-  const runDate = new Date();
-  const fullDate: string = [runDate.getFullYear(), runDate.getMonth() + 1, runDate.getDate(), runDate.getHours(), runDate.getMinutes(), runDate.getSeconds()].join('-');
   //Initiating CSV writer
   const csvFUJI = new Readable({ objectMode: true });
+  const csvEVA = new Readable({ objectMode: true });
   csvFUJI._read = () => { };
+  csvEVA._read = () => { };
 
   // Begin API Loop for studies fetched
   for (const site of sitemapResFiltered) {
     logger.info(`Processing study: ${site}`);
     const urlLink: URL = new URL(site);
-    let studyInfo: StudyInfo = {
-      url: site,
-      urlParams: urlLink.searchParams,
-      urlPath: urlLink.pathname.substring(1),
-      testDate: fullDate
-    };  
+    studyInfo.url = site;
+    studyInfo.urlParams = urlLink.searchParams;
+    studyInfo.urlPath = urlLink.pathname.substring(1);
+    //gather required variables, depending on SP
     if (site.includes("datacatalogue.cessda.eu") || site.includes("datacatalogue-staging.cessda.eu")){  //get the publisher + studyNumber from CDC Internal API
-      studyInfo.fileName = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + studyInfo.testDate + ".json";
+      studyInfo.fileName = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + studyInfo.assessDate + ".json";
+      studyInfo.cdcID = studyInfo.urlParams?.get('q');
       const temp: StudyInfo = await getCDCApiInfo(studyInfo, requestHeaders);
       studyInfo.publisher = temp.publisher;
-      studyInfo.studyNumber = temp.studyNumber;
+      studyInfo.cdcStudyNumber = temp.cdcStudyNumber;
     }
     else if(site.includes("snd.gu.se") || site.includes("adp.fdv.uni-lj")){
       studyInfo.fileName = studyInfo.urlPath?.replaceAll('/', '-')+".json";
       studyInfo.publisher = hostname;
     }
     else{ // Dataverse cases
-      studyInfo.fileName = studyInfo.urlParams?.get('persistentId') + "-" + studyInfo.testDate + ".json";
+      studyInfo.spID = studyInfo.urlParams?.get('persistentId');
+      studyInfo.fileName = studyInfo.urlParams?.get('persistentId') + "-" + studyInfo.assessDate + ".json";
       studyInfo.fileName = studyInfo.fileName.replace(/[&\/\\#,+()$~%'":*?<>{}]/g,"-");
       studyInfo.publisher = hostname;
     }
     //TODO: await 1 promise for both fujiResults and FAIREva results
-    const fujiData: JSON | string = await getFUJIResults(studyInfo, base64UsernamePassword);
-    resultsToElastic(studyInfo.fileName, fujiData);
-    resultsToHDD(dir, studyInfo.fileName, fujiData);
+    let [evaData, fujiData] = await Promise.allSettled([getEVAResults(studyInfo), getFUJIResults(studyInfo, base64UsernamePassword)]);
+    //const fujiData: JSON | string = await getFUJIResults(studyInfo, base64UsernamePassword);
+    resultsToElastic("FUJI-"+studyInfo.fileName, fujiData);
+    resultsToElastic("EVA-"+studyInfo.fileName, evaData);
+    resultsToHDD(dir, "FUJI-"+studyInfo.fileName, fujiData);
+    resultsToHDD(dir, "EVA-"+studyInfo.fileName, evaData);
     //uploadFromMemory(fileName, fujiResults).catch0(console.error); //Write-to-Cloud-Bucket function
-    csvFUJI.push(fujiData); //Push data to CSV writer
+    csvFUJI.push(fujiData); //Push FUJI data to CSV writer
+    csvEVA.push(evaData); //Push EVA data to CSV writer
   }
   
   //prepare results to be parsed to csv
   csvFUJI.push(null);
-  const fujiOutputLocal = createWriteStream(`../outputs/CSV-FUJI_${hostname}_${fullDate}.csv`, { encoding: 'utf8' });
+  csvEVA.push(null);
+  const fujiOutputLocal = createWriteStream(`../outputs/CSV-FUJI_${hostname}_${studyInfo.assessDate}.csv`, { encoding: 'utf8' });
   let fields = [
     'request.object_identifier',
     'summary.score_percent.A',

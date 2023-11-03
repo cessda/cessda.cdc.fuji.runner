@@ -1,5 +1,5 @@
 import axios, { type AxiosResponse } from "axios";
-import { logger, dashLogger } from "../logger.js";
+import { logger, dashLogger } from "./logger.js";
 
 export async function getFUJIResults(studyInfo: StudyInfo, base64UsernamePassword: string): Promise<JSON | string> {
     let fujiRes: AxiosResponse<any, any>;
@@ -60,19 +60,19 @@ export async function getFUJIResults(studyInfo: StudyInfo, base64UsernamePasswor
     fujiResults['summary']['score_percent']['R1_3'] = fujiResults['summary']['score_percent']['R1.3'];
     delete fujiResults['summary']['score_percent']['R1.3'];
     fujiResults['publisher'] = studyInfo.publisher;
-    fujiResults['dateID'] = "FujiRun-" + studyInfo.testDate;
+    fujiResults['dateID'] = "FujiRun-" + studyInfo.assessDate;
     // TODO: CHECK FOR OTHER SP'S URI PARAMS
     if (studyInfo.url?.includes("datacatalogue.cessda.eu") || studyInfo.url?.includes("datacatalogue-staging.cessda.eu")){
-      fujiResults['uid'] = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + studyInfo.testDate;
-      fujiResults['pid'] = studyInfo.studyNumber;
+      fujiResults['uid'] = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + studyInfo.assessDate;
+      fujiResults['pid'] = studyInfo.cdcStudyNumber;
     }
     else if(studyInfo.url?.includes("snd.gu.se") || studyInfo.url?.includes("adp.fdv.uni-lj")){
       //fujiResults['uid'] = studyInfo.urlPath?.replaceAll('/', '-') + "-" + fullDate;
-      fujiResults['uid'] = studyInfo.urlPath + "-" + studyInfo.testDate;
+      fujiResults['uid'] = studyInfo.urlPath + "-" + studyInfo.assessDate;
       fujiResults['pid'] = studyInfo.urlPath;
     }
     else{ // Dataverse cases
-      fujiResults['uid'] = studyInfo.urlParams?.get('persistentId') + "-" + studyInfo.testDate; 
+      fujiResults['uid'] = studyInfo.urlParams?.get('persistentId') + "-" + studyInfo.assessDate; 
       fujiResults['pid'] = studyInfo.urlParams?.get('persistentId');
     }
     return fujiResults;

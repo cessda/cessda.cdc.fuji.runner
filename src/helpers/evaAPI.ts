@@ -1,5 +1,5 @@
 import axios, { type AxiosResponse } from "axios";
-import { logger, dashLogger } from "../logger.js";
+import { logger, dashLogger } from "./logger.js";
 
 export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string> {
     let evaResponse: AxiosResponse<any, any>;
@@ -11,9 +11,9 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
     while (retries <= maxRetries && !success) {
       try {
         evaResponse = await axios.post(process.env['EVA_API_LOCAL']!, {
-          "id": "10.17903/FK2/YZD8DP",
+          "id": studyInfo.cdcID != null ? studyInfo.cdcID : studyInfo.spID,
           "lang": "en",
-          "oai_base": "https://datacatalogue.sodanet.gr/oai",
+          "oai_base": studyInfo.oaiLink,
           "repo": "oai-pmh",
         });
         logger.info(`EVA API statusCode: ${evaResponse.status}`);
@@ -39,7 +39,8 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
       evaResults = `Too many  request retries on EVA API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
       return evaResults; //skip study assessment
     }
-    //Do something with the actual data...
+    // TODO: something with the actual data...
+    console.log(evaResults);
     /*
     delete fujiResults['results'];
     delete fujiResults.summary.maturity;

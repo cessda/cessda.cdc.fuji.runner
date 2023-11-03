@@ -1,5 +1,5 @@
 import { Client } from '@elastic/elasticsearch';
-import { logger, dashLogger } from "../logger.js";
+import { logger, dashLogger } from "./logger.js";
 
 // Elasticsearch Client - Defaults to localhost if true and unspecified
 const elasticsearchUrl = process.env['PASC_ELASTICSEARCH_URL'] || "http://localhost:9200/";
@@ -20,10 +20,10 @@ const client = elasticsearchUsername && elasticsearchPassword ? new Client({
 
 
 export async function elasticIndexCheck() {
-    const { body: exists } = await client.indices.exists({ index: 'fuji-results' })
+    const { body: exists } = await client.indices.exists({ index: 'fair-results' })
     if (!exists) {
       await client.indices.create({
-        index: 'fuji-results',
+        index: 'fair-results',
         body: {
           mappings: {
             dynamic: 'runtime',
@@ -38,13 +38,13 @@ export async function elasticIndexCheck() {
     }
   }
   
-  export async function resultsToElastic(fileName: string, fujiResults: JSON | string) {
+  export async function resultsToElastic(fileName: string, assessResults: PromiseSettledResult<string | JSON>) {
     try {
       const elasticdoc = {
-        index: 'fuji-results',
+        index: 'fair-results',
         id: fileName,
         body: {
-          fujiResults
+          assessResults
         }
       }
       await client.index(elasticdoc)

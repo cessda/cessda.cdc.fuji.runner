@@ -8,8 +8,8 @@
 *.so
 /src/main.js
 /src/main.js.map
-/src/logger.js
-/src/logger.js.map
+/src/helpers/logger.js
+/src/helpers/logger.js.map
 /src/helpers/cdcInfoAPI.js
 /src/helpers/cdcInfoAPI.js.map
 /src/helpers/esFunctions.js

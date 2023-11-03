@@ -1,6 +1,6 @@
 import type { AxiosResponse } from "axios";
 import axios from "axios";
-import { logger, dashLogger } from "../logger.js";
+import { logger, dashLogger } from "./logger.js";
 
 export async function getCDCApiInfo(studyInfo: StudyInfo, requestHeaders: any): Promise<StudyInfo>{
     const cdcApiUrl = 'https://datacatalogue.cessda.eu/api/json/cmmstudy_' + studyInfo.urlParams?.get('lang') + '/' + studyInfo.urlParams?.get('q');
@@ -59,6 +59,6 @@ export async function getCDCApiInfo(studyInfo: StudyInfo, requestHeaders: any): 
     }
     //add results to interface and return it
     studyInfo.publisher = publisher;
-    studyInfo.studyNumber = studyNumber;
+    studyInfo.cdcStudyNumber = studyNumber;
     return studyInfo;
   }
