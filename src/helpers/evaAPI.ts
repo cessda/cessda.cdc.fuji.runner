@@ -39,7 +39,6 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
       evaResults = `Too many  request retries on EVA API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
       return evaResults; //skip study assessment
     }
-    // TODO: something with the actual data...
     let evaObjResults: JSON = JSON.parse(evaResults);
     console.log(JSON.stringify(evaObjResults,null,'\t'));
     /*

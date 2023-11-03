@@ -130,6 +130,7 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
       studyInfo.cdcStudyNumber = temp.cdcStudyNumber;
     }
     else if(site.includes("snd.gu.se") || site.includes("adp.fdv.uni-lj")){
+      // TODO: add studyInfo.spID
       studyInfo.fileName = studyInfo.urlPath?.replaceAll('/', '-')+".json";
       studyInfo.publisher = hostname;
     }
@@ -139,9 +140,8 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
       studyInfo.fileName = studyInfo.fileName.replace(/[&\/\\#,+()$~%'":*?<>{}]/g,"-");
       studyInfo.publisher = hostname;
     }
-    //TODO: await 1 promise for both fujiResults and FAIREva results
-    let [evaData, fujiData] = await Promise.allSettled([getEVAResults(studyInfo), getFUJIResults(studyInfo, base64UsernamePassword)]);
-    //const fujiData: JSON | string = await getFUJIResults(studyInfo, base64UsernamePassword);
+    //get results from EVA and FUJI API
+    const [evaData, fujiData] = await Promise.allSettled([getEVAResults(studyInfo), getFUJIResults(studyInfo, base64UsernamePassword)]);
     resultsToElastic("FUJI-"+studyInfo.fileName, fujiData);
     resultsToElastic("EVA-"+studyInfo.fileName, evaData);
     resultsToHDD(dir, "FUJI-"+studyInfo.fileName, fujiData);
@@ -155,6 +155,7 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
   csvFUJI.push(null);
   csvEVA.push(null);
   const fujiOutputLocal = createWriteStream(`../outputs/CSV-FUJI_${hostname}_${studyInfo.assessDate}.csv`, { encoding: 'utf8' });
+  const evaOutputLocal = createWriteStream(`../outputs/CSV-EVA_${hostname}_${studyInfo.assessDate}.csv`, { encoding: 'utf8' });
   let fields = [
     'request.object_identifier',
     'summary.score_percent.A',
