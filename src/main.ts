@@ -152,7 +152,6 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
     resultsToHDD(dir, "EVA-"+studyInfo.fileName, evaData);
     resultsToElastic("FUJI-"+studyInfo.fileName, fujiData);
     resultsToHDD(dir, "FUJI-"+studyInfo.fileName, fujiData);
-    
     //uploadFromMemory(fileName, fujiResults).catch0(console.error); //Write-to-Cloud-Bucket function
     csvFUJI.push(fujiData); //Push FUJI data to CSV writer
     csvEVA.push(evaData); //Push EVA data to CSV writer

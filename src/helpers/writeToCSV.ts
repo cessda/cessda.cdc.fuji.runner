@@ -30,10 +30,10 @@ export async function resultsToCSV(csvFUJI: Readable, csvEVA: Readable, hostname
         'value.summary.score_percent.R1_1',
         'value.summary.score_percent.R1_2',
         'value.summary.score_percent.R1_3',
-        'timestamp',
-        'publisher',
-        'uid',
-        'pid'
+        'value.timestamp',
+        'value.publisher',
+        'value.uid',
+        'value.pid'
     ];
     let opts;
     let transformOpts;
@@ -90,10 +90,10 @@ export async function resultsToCSV(csvFUJI: Readable, csvEVA: Readable, hostname
         'value.reusable.rda_r1_3_01d.points',
         'value.reusable.rda_r1_3_02m.points',
         'value.reusable.rda_r1_3_02d.points',
-        'timestamp',
-        'publisher',
-        'uid',
-        'pid'
+        'value.timestamp',
+        'value.publisher',
+        'value.uid',
+        'value.pid'
     ];
     opts = { fields };
     transformOpts = { objectMode: true };
