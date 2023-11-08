@@ -2,7 +2,7 @@ import * as dotenv from 'dotenv'
 import * as fsPromise from 'fs/promises';
 import Sitemapper, { type SitemapperResponse } from 'sitemapper';
 import { URL } from 'url';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { Readable } from 'stream';
 import { dashLogger, logger } from "./helpers/logger.js";
 import { getCDCApiInfo } from './helpers/cdcInfoAPI.js';
@@ -107,6 +107,10 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
   let dir: string = '../outputs/'+hostname;
   if (!existsSync(dir))
     mkdirSync(dir, { recursive: true });
+  //create logfile failed.txt for storing failed study assesses
+  let failed = '../outputs/failed.txt';
+  if (!existsSync(failed))
+    writeFileSync(failed, '', { flag: 'ax' });
   //Initiating CSV writer
   const csvFUJI = new Readable({ objectMode: true });
   const csvEVA = new Readable({ objectMode: true });

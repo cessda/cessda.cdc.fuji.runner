@@ -1,5 +1,6 @@
 import axios, { type AxiosResponse } from "axios";
 import { logger, dashLogger } from "./logger.js";
+import { writeFileSync } from "fs";
 
 export async function getFUJIResults(studyInfo: StudyInfo, base64UsernamePassword: string): Promise<JSON | string> {
     let fujiRes: AxiosResponse<any, any>;
@@ -43,6 +44,7 @@ export async function getFUJIResults(studyInfo: StudyInfo, base64UsernamePasswor
     if(retries >= maxRetries){
       logger.error(`Too many  request retries on FUJI API.`);
       dashLogger.error(`Too many  request retries on FUJI API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
+      writeFileSync('../outputs/failed.txt', studyInfo.url!+'\n', { flag: 'ax' });
       fujiResults = `Too many  request retries on FUJI API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
       return fujiResults; //skip study assessment
     }

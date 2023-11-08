@@ -1,5 +1,6 @@
 import axios, { type AxiosResponse } from "axios";
 import { logger, dashLogger } from "./logger.js";
+import { writeFileSync } from "fs";
 
 export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string> {
     let evaResponse: AxiosResponse<any, any>;
@@ -36,6 +37,7 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
     if(retries >= maxRetries){
       logger.error(`Too many  request retries on EVA API.`);
       dashLogger.error(`Too many  request retries on EVA API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
+      writeFileSync('../outputs/failed.txt', studyInfo.url!+'\n', { flag: 'ax' });
       evaResults = `Too many  request retries on EVA API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
       return evaResults; //skip study assessment
     }
