@@ -122,7 +122,7 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
     studyInfo.urlPath = urlLink.pathname.substring(1);
     //gather required variables, depending on SP
     if (site.includes("datacatalogue.cessda.eu") || site.includes("datacatalogue-staging.cessda.eu")){  //get the publisher + studyNumber from CDC Internal API
-      studyInfo.fileName = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + studyInfo.assessDate + ".json";
+      studyInfo.fileName = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + studyInfo.assessDate ;
       studyInfo.cdcID = studyInfo.urlParams?.get('q');
       const temp: StudyInfo = await getCDCApiInfo(studyInfo, requestHeaders);
       studyInfo.publisher = temp.publisher;
@@ -130,35 +130,36 @@ async function apiRunner(sitemapLine: URL): Promise<void> {
     }
     else if(site.includes("adp.fdv.uni-lj")){
       let pathArray: string[] = studyInfo.urlPath.split('/');
-      studyInfo.spID = pathArray[pathArray.length-2]
-      studyInfo.fileName = studyInfo.urlPath?.replaceAll('/', '-')+".json";
+      pathArray = pathArray.map(function(x){ return x.toUpperCase(); })
+      studyInfo.spID = pathArray[pathArray.length-2];
+      studyInfo.fileName = studyInfo.urlPath?.replaceAll('/', '-');
       studyInfo.publisher = hostname;
     }
     else if(site.includes("snd.gu.se")){
       let pathArray: string[] = studyInfo.urlPath.split('/');
       studyInfo.spID = pathArray[pathArray.length-1]
-      studyInfo.fileName = studyInfo.urlPath?.replaceAll('/', '-')+".json";
+      studyInfo.fileName = studyInfo.urlPath?.replaceAll('/', '-');
       studyInfo.publisher = hostname;
     }
     else{ // Dataverse cases
       studyInfo.spID = studyInfo.urlParams?.get('persistentId');
-      studyInfo.fileName = studyInfo.urlParams?.get('persistentId') + "-" + studyInfo.assessDate + ".json";
+      studyInfo.fileName = studyInfo.urlParams?.get('persistentId') + "-" + studyInfo.assessDate;
       studyInfo.fileName = studyInfo.fileName.replace(/[&\/\\#,+()$~%'":*?<>{}]/g,"-");
       studyInfo.publisher = hostname;
     }
     //get results from EVA and FUJI API
     let [evaData, fujiData] = await Promise.allSettled([getEVAResults(studyInfo), getFUJIResults(studyInfo, base64UsernamePassword)]);
-    resultsToElastic("EVA-"+studyInfo.fileName, evaData);
-    resultsToHDD(dir, "EVA-"+studyInfo.fileName, evaData);
-    resultsToElastic("FUJI-"+studyInfo.fileName, fujiData);
-    resultsToHDD(dir, "FUJI-"+studyInfo.fileName, fujiData);
+    resultsToElastic(studyInfo.fileName+"-EVA", evaData);
+    resultsToHDD(dir, studyInfo.fileName+"-EVA.json", evaData);
+    resultsToElastic(studyInfo.fileName+"-FUJI", fujiData);
+    resultsToHDD(dir, studyInfo.fileName+"-FUJI.json", fujiData);
     //uploadFromMemory(fileName, fujiResults).catch0(console.error); //Write-to-Cloud-Bucket function
     csvFUJI.push(fujiData); //Push FUJI data to CSV writer
     csvEVA.push(evaData); //Push EVA data to CSV writer
   }
   
   //parse results to CSV
-  resultsToCSV(csvFUJI, csvEVA, hostname, studyInfo.assessDate);
+  resultsToCSV(csvFUJI, csvEVA, hostname+"_"+studyInfo.assessDate);
   logger.info(`Finished sitemap: ${sitemapLine}`);
   dashLogger.info(`Finished sitemap: ${sitemapLine}, time:${new Date().toUTCString()}`);
 };

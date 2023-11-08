@@ -1,8 +1,1 @@
-https://data.aussda.at/sitemap.xml
-https://snd.gu.se/sv/catalogue/sitemap.xml
 https://www.adp.fdv.uni-lj.si/sitemap.xml
-https://datacatalogue.sodanet.gr/sitemap.xml
-https://ssh.datastations.nl/sitemap.xml
-https://www.sodha.be/sitemap.xml
-https://datacatalogue.cessda.eu/sitemap_index.xml
-https://datacatalogue-staging.cessda.eu/sitemap_index.xml

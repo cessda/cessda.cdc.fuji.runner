@@ -43,6 +43,7 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
     //console.log(JSON.stringify(evaObjResults,null,'\t'));
     //Delete scores and logs from response that are not needed
     //TODO: overall FAIR score???
+    evaObjResults['studyURL'] = studyInfo.url;
     evaObjResults['publisher'] = studyInfo.publisher;
     evaObjResults['dateID'] = "EVARun-" + studyInfo.assessDate;
     // TODO: CHECK FOR OTHER SP'S URI PARAMS

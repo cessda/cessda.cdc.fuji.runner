@@ -23,27 +23,27 @@ export async function getFUJIResults(studyInfo: StudyInfo, base64UsernamePasswor
             password: process.env['FUJI_PASSWORD_LOCAL']!
           }
         });
-        logger.info(`FujiAPI statusCode: ${fujiRes.status}`);
+        logger.info(`FUJI API statusCode: ${fujiRes.status}`);
         fujiResults = fujiRes.data;
         success = true;
       }
       catch (error) {
         if (axios.isAxiosError(error)) {
-          logger.error(`AxiosError at FujiAPI: ${error.message}, Response Status:${error.response?.status}, URL:${studyInfo.url}`);
-          dashLogger.error(`AxiosError at FujiAPI: ${error.message}, Response Status:${error.response?.status}, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
+          logger.error(`AxiosError at FUJI API: ${error.message}, Response Status:${error.response?.status}, URL:${studyInfo.url}`);
+          dashLogger.error(`AxiosError at FUJI API: ${error.message}, Response Status:${error.response?.status}, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
         }
         else {
-          logger.error(`Error at FujiAPI: ${error}, URL:${studyInfo.url}`);
-          dashLogger.error(`Error at FujiAPI: ${error}, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
+          logger.error(`Error at FUJI API: ${error}, URL:${studyInfo.url}`);
+          dashLogger.error(`Error at FUJI API: ${error}, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
         }
         await new Promise(resolve => setTimeout(resolve, 5000)); //delay new retry by 5sec
       }
       retries++;
     }
     if(retries >= maxRetries){
-      logger.error(`Too many  request retries on FujiAPI.`);
-      dashLogger.error(`Too many  request retries on FujiAPI, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
-      fujiResults = `Too many  request retries on FujiAPI, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
+      logger.error(`Too many  request retries on FUJI API.`);
+      dashLogger.error(`Too many  request retries on FUJI API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
+      fujiResults = `Too many  request retries on FUJI API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
       return fujiResults; //skip study assessment
     }
     //Delete scores and logs from response that are not needed

@@ -4,11 +4,11 @@ import { parseAsync } from "json2csv";
 import { createWriteStream } from 'fs';
 import type { Readable } from "stream";
 
-export async function resultsToCSV(csvFUJI: Readable, csvEVA: Readable, hostname: string, assessDate: string | undefined) {
+export async function resultsToCSV(csvFUJI: Readable, csvEVA: Readable, filename: string) {
     csvFUJI.push(null);
     csvEVA.push(null);
-    const fujiOutputLocal = createWriteStream(`../outputs/CSV-FUJI_${hostname}_${assessDate}.csv`, { encoding: 'utf8' });
-    const evaOutputLocal = createWriteStream(`../outputs/CSV-EVA_${hostname}_${assessDate}.csv`, { encoding: 'utf8' });
+    const fujiOutputLocal = createWriteStream(`../outputs/${filename}-FUJI.csv`, { encoding: 'utf8' });
+    const evaOutputLocal = createWriteStream(`../outputs/${filename}-EVA.csv`, { encoding: 'utf8' });
     //write fuji results to csv
     let fields: string[] = [];
     fields = [
@@ -30,7 +30,7 @@ export async function resultsToCSV(csvFUJI: Readable, csvEVA: Readable, hostname
         'value.summary.score_percent.R1_1',
         'value.summary.score_percent.R1_2',
         'value.summary.score_percent.R1_3',
-        'value.timestamp',
+        'value.dateID',
         'value.publisher',
         'value.uid',
         'value.pid'
@@ -90,8 +90,9 @@ export async function resultsToCSV(csvFUJI: Readable, csvEVA: Readable, hostname
         'value.reusable.rda_r1_3_01d.points',
         'value.reusable.rda_r1_3_02m.points',
         'value.reusable.rda_r1_3_02d.points',
-        'value.timestamp',
+        'value.studyURL',
         'value.publisher',
+        'value.dateID',
         'value.uid',
         'value.pid'
     ];

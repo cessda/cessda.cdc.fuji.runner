@@ -87,3 +87,7 @@ outputs/*
 
 ### ENV ###
 .env
+
+### INPUTS ###
+/inputs/sitemapsALL.txt
+/inputs/sitemapsRUN.txt
