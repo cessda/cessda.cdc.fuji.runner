@@ -86,7 +86,7 @@ export async function getStudiesAssess(studiesAssessFiltered: string[], hostname
                 case "ssh.datastations.nl":
                     studyInfo.oaiLink = "https://ssh.datastations.nl/oai";
                     break;
-                case "sodha.be":
+                case "www.sodha.be":
                     studyInfo.oaiLink = "https://www.sodha.be/oai";
                     break;
             }

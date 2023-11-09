@@ -49,7 +49,7 @@ export async function getStudiesFromSitemap(sitemapLine: URL): Promise<string[]>
                 return temp.includes("persistentId");
             });
             break;
-        case "sodha.be":
+        case "www.sodha.be":
             sitemapResFiltered = sitemapRes.sites.filter((temp) => {
                 return temp.includes("persistentId");
             });

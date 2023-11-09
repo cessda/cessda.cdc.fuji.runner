@@ -23,7 +23,7 @@ for await (const sitemapLine of file.readLines()) {
   logger.info(`Processing sitemap: ${sitemapLine}`);
   dashLogger.info(`Processing sitemap: ${sitemapLine}, time:${new Date().toUTCString()}`);
   const studiesAssessFiltered = await getStudiesFromSitemap(new URL(sitemapLine));
-  const hostname = (sitemapLine as unknown as URL).hostname;
+  const hostname = new URL(sitemapLine).hostname;
   await getStudiesAssess(studiesAssessFiltered, hostname);
   logger.info(`Finished assessing sitemap: ${sitemapLine}`);
   dashLogger.info(`Finished assessing sitemap: ${sitemapLine}, time:${new Date().toUTCString()}`);
