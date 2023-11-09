@@ -42,9 +42,8 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
     return evaResults; //skip study assessment
   }
   let evaObjResults: JSON | any = JSON.parse(evaResults);
-  //console.log(JSON.stringify(evaObjResults,null,'\t'));
+  //TODO: overall FAIR score??? - console.log(JSON.stringify(evaObjResults,null,'\t'));
   //Delete scores and logs from response that are not needed
-  //TODO: overall FAIR score???
   evaObjResults['studyURL'] = studyInfo.url;
   evaObjResults['publisher'] = studyInfo.publisher;
   evaObjResults['dateID'] = "EVARun-" + studyInfo.assessDate;

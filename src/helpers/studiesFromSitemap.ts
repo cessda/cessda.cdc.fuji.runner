@@ -31,7 +31,7 @@ export async function getStudiesFromSitemap(sitemapLine: URL): Promise<string[]>
         return process.exit(1);
     }
     logger.info(`Links Collected: ${sitemapRes.sites.length}`);
-    // TODO: `REMOVE URL's THAT DONT CONTAIN STUDIES (IDENTIFIER IN URL) + INCLUDE OAI LINK
+    // TODO: `REMOVE URL's THAT DONT CONTAIN STUDIES FOR ASSESSMENT (LIKE VALID IDENTIFIER IN URL, ETC)
     let sitemapResFiltered: string[] = [];
     switch (sitemapLine.hostname) {
         case "data.aussda.at":
@@ -39,26 +39,20 @@ export async function getStudiesFromSitemap(sitemapLine: URL): Promise<string[]>
                 return temp.includes("persistentId");
             });
             break;
-        case "datacatalogue.sodanet.gr": {
-            //studyInfo.oaiLink = "https://datacatalogue.sodanet.gr/oai";
+        case "datacatalogue.sodanet.gr":
             sitemapResFiltered = sitemapRes.sites.filter((temp) => {
                 return temp.includes("persistentId");
             });
-        }
             break;
-        case "ssh.datastations.nl": {
-            //studyInfo.oaiLink = "https://ssh.datastations.nl/oai";
+        case "ssh.datastations.nl":
             sitemapResFiltered = sitemapRes.sites.filter((temp) => {
                 return temp.includes("persistentId");
             });
-        }
             break;
-        case "sodha.be": {
-            //studyInfo.oaiLink = "https://www.sodha.be/oai";
+        case "sodha.be":
             sitemapResFiltered = sitemapRes.sites.filter((temp) => {
                 return temp.includes("persistentId");
             });
-        }
             break;
         case "datacatalogue.cessda.eu":
             sitemapResFiltered = sitemapRes.sites.filter(temp => temp !== 'https://datacatalogue.cessda.eu/');

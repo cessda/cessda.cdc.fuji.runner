@@ -7,7 +7,6 @@ export async function getCDCApiInfo(studyInfo: StudyInfo, requestHeaders: any): 
   const cdcStagingApiUrl = 'https://datacatalogue-staging.cessda.eu/api/json/cmmstudy_' + studyInfo.urlParams?.get('lang') + '/' + studyInfo.urlParams?.get('q');
   let cdcApiRes: AxiosResponse<any, any>;
   let publisher: string = "";
-  //let pidStudies: string = "";
   let studyNumber: string = "";
   let maxRetries: number = 10;
   let retries: number = 0;
@@ -22,24 +21,6 @@ export async function getCDCApiInfo(studyInfo: StudyInfo, requestHeaders: any): 
       logger.info(`CDC Internal API statusCode: ${cdcApiRes.status}`);
       publisher = cdcApiRes.data.publisherFilter.publisher;
       studyNumber = cdcApiRes.data.studyNumber;
-      /*pidStudies = cdcApiRes.data.pidStudies.forEach( (temp: {agency: string, pid: string}) => {
-        switch(temp.agency){
-          case "DOI":
-          case "Handle":
-          case "URN":
-          case "ARK":
-            if (temp.pid.includes("http")){
-              let tempPID = <URL> <unknown>temp.pid;
-              return tempPID.pathname.substring(1);
-            }   
-            else{ //type of pidStudies is string
-              return temp.pid;
-            }
-          //TODO: also include other pids? i.e. "DANS-KNAW"
-          default:
-            return "NOT-DOI-Handle-URN-ARK";
-        }
-    });*/
       success = true;
     }
     catch (error) {
@@ -60,5 +41,6 @@ export async function getCDCApiInfo(studyInfo: StudyInfo, requestHeaders: any): 
   //add results to interface and return it
   studyInfo.publisher = publisher;
   studyInfo.cdcStudyNumber = studyNumber;
+  
   return studyInfo;
 }
