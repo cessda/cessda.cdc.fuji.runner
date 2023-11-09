@@ -12,7 +12,6 @@ export async function resultsToCSV(csvFUJI: Readable, csvEVA: Readable, filename
     //write fuji results to csv
     let fields: string[] = [];
     fields = [
-        'value.request.object_identifier',
         'value.summary.score_percent.A',
         'value.summary.score_percent.A1',
         'value.summary.score_percent.F',
@@ -30,8 +29,9 @@ export async function resultsToCSV(csvFUJI: Readable, csvEVA: Readable, filename
         'value.summary.score_percent.R1_1',
         'value.summary.score_percent.R1_2',
         'value.summary.score_percent.R1_3',
-        'value.dateID',
+        'value.request.object_identifier',
         'value.publisher',
+        'value.dateID',
         'value.uid',
         'value.pid'
     ];

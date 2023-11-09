@@ -2,7 +2,7 @@
   "name": "cessda.cdc.fuji.runner",
   "version": "1.0.0",
   "description": "API Runner for CDC FAIR assessment",
-  "main": "src/main.ts",
+  "main": "src/assessSitemaps.ts",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -11,7 +11,7 @@
     "watch:build": "tsc --watch",
     "start": "npm-run-all clean build --parallel watch:build"
   },
-  "author": "",
+  "author": "github@kpapag",
   "license": "Apache-2.0",
   "devDependencies": {
     "@tsconfig/node18-strictest-esm": "^1.0.1",
