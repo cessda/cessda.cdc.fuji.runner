@@ -1,8 +1,9 @@
 import type { AxiosResponse } from "axios";
 import axios from "axios";
 import { logger, dashLogger } from "./logger.js";
+import { requestHeaders } from "./cdcStagingConn.js";
 
-export async function getCDCApiInfo(studyInfo: StudyInfo, requestHeaders: any): Promise<StudyInfo> {
+export async function getCDCApiInfo(studyInfo: StudyInfo): Promise<StudyInfo> {
   const cdcApiUrl = 'https://datacatalogue.cessda.eu/api/json/cmmstudy_' + studyInfo.urlParams?.get('lang') + '/' + studyInfo.urlParams?.get('q');
   const cdcStagingApiUrl = 'https://datacatalogue-staging.cessda.eu/api/json/cmmstudy_' + studyInfo.urlParams?.get('lang') + '/' + studyInfo.urlParams?.get('q');
   let cdcApiRes: AxiosResponse<any, any>;

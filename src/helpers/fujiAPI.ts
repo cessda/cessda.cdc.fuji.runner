@@ -1,8 +1,10 @@
 import axios, { type AxiosResponse } from "axios";
 import { logger, dashLogger } from "./logger.js";
 import { writeFileSync } from "fs";
+import { base64UsernamePassword } from "./cdcStagingConn.js";
 
-export async function getFUJIResults(studyInfo: StudyInfo, base64UsernamePassword: string): Promise<JSON | string> {
+
+export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | string> {
   let fujiRes: AxiosResponse<any, any>;
   let fujiResults: any | string;
   let maxRetries: number = 10;

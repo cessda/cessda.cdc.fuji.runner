@@ -6,12 +6,14 @@
 *.exe
 *.o
 *.so
-/src/assessSitemaps.js
-/src/assessSitemaps.js.map
-/src/assessStudies.js
-/src/assessStudies.js.map
+/src/sitemaps.js
+/src/sitemaps.js.map
+/src/studies.js
+/src/studies.js.map
 /src/helpers/logger.js
 /src/helpers/logger.js.map
+/src/helpers/cdcStagingConn.js
+/src/helpers/cdcStagingConn.js.map
 /src/helpers/cdcInfoAPI.js
 /src/helpers/cdcInfoAPI.js.map
 /src/helpers/esFunctions.js
@@ -26,8 +28,8 @@
 /src/helpers/writeToCSV.js.map
 /src/helpers/studiesAssessment.js
 /src/helpers/studiesAssessment.js.map
-/src/helpers/studiesFromSitemap.js
-/src/helpers/studiesFromSitemap.js.map
+/src/helpers/fetchSitemapStudies.js
+/src/helpers/fetchSitemapStudies.js.map
 
 # Packages #
 ############

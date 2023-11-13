@@ -1,18 +1,6 @@
 import Sitemapper, { type SitemapperResponse } from 'sitemapper';
 import { dashLogger, logger } from "./logger.js";
-
-//To use if testing against CDC staging
-const cdcusername = process.env['CDC_USERNAME'];
-const cdcpassword = process.env['CDC_PASSWORD'];
-
-const usernamePasswordBuffer = Buffer.from(
-    `${cdcusername}:${cdcpassword}`,
-    "utf-8"
-);
-const base64UsernamePassword = usernamePasswordBuffer.toString("base64");
-const requestHeaders = {
-    Authorization: `Basic ${base64UsernamePassword}`,
-};
+import { requestHeaders } from "./cdcStagingConn.js";
 
 export async function getStudiesFromSitemap(sitemapLine: URL): Promise<string[]> {
     //prepare request for gathering all url's existing on sitemap

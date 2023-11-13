@@ -4,7 +4,7 @@ import { URL } from 'url';
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 import { getStudiesAssess } from './helpers/studiesAssessment.js';
 import { dashLogger, logger } from "./helpers/logger.js";
-import { getStudiesFromSitemap } from "./helpers/studiesFromSitemap.js";
+import { getStudiesFromSitemap } from "./helpers/fetchSitemapStudies.js";
 import { elasticIndexCheck } from './helpers/esFunctions.js';
 import { isFileEmpty } from './helpers/writeToFiles.js';
 dotenv.config({ path: '../.env' })
