@@ -25,45 +25,45 @@ export async function getStudiesAssess(studiesAssessFiltered: string[], outputNa
     csvFUJI._read = () => { };
     csvEVA._read = () => { };
     // Begin API Loop for studies fetched
-    for (const site of studiesAssessFiltered) {
-        logger.info(`Processing study: ${site}`);
-        const urlLink: URL = new URL(site);
+    for (const study of studiesAssessFiltered) {
+        logger.info(`Processing study: ${study}`);
+        const studyURL: URL = new URL(study);
         let studyInfo: StudyInfo = {};
         studyInfo.assessDate = assessDate
-        studyInfo.url = site;
-        studyInfo.urlParams = urlLink.searchParams;
-        studyInfo.urlPath = urlLink.pathname.substring(1);
+        studyInfo.url = study;
+        studyInfo.urlParams = studyURL.searchParams;
+        studyInfo.urlPath = studyURL.pathname.substring(1);
         //gather required variables, depending on SP
-        if (site.includes("datacatalogue.cessda.eu") || site.includes("datacatalogue-staging.cessda.eu")) {
+        if (study.includes("datacatalogue.cessda.eu") || study.includes("datacatalogue-staging.cessda.eu")) {
             //get the study info from CDC Internal API
             studyInfo.fileName = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + studyInfo.assessDate;
             studyInfo.cdcID = studyInfo.urlParams?.get('q');
             const temp: StudyInfo = await getCDCApiInfo(studyInfo);
             studyInfo.publisher = temp.publisher;
             studyInfo.cdcStudyNumber = temp.cdcStudyNumber;
-            studyInfo.oaiLink = site.includes("datacatalogue.cessda.eu") ? "https://datacatalogue.cessda.eu/oai-pmh/v0/oai" : "https://datacatalogue-staging.cessda.eu/oai-pmh/v0/oai";
+            studyInfo.oaiLink = study.includes("datacatalogue.cessda.eu") ? "https://datacatalogue.cessda.eu/oai-pmh/v0/oai" : "https://datacatalogue-staging.cessda.eu/oai-pmh/v0/oai";
         }
-        else if (site.includes("adp.fdv.uni-lj")) {
+        else if (study.includes("adp.fdv.uni-lj")) {
             let pathArray: string[] = studyInfo.urlPath.split('/');
             pathArray = pathArray.map(function (x) { return x.toUpperCase(); })
             studyInfo.spID = pathArray[pathArray.length - 2];
             studyInfo.fileName = studyInfo.urlPath?.replaceAll('/', '-') + "-" + studyInfo.assessDate;
-            studyInfo.publisher = urlLink.hostname;
+            studyInfo.publisher = studyURL.hostname;
             studyInfo.oaiLink = "https://www.adp.fdv.uni-lj.si/v0/oai";
         }
-        else if (site.includes("snd.gu.se")) {
+        else if (study.includes("snd.gu.se")) {
             let pathArray: string[] = studyInfo.urlPath.split('/');
             studyInfo.spID = pathArray[pathArray.length - 1]
             studyInfo.fileName = studyInfo.urlPath?.replaceAll('/', '-') + "-" + studyInfo.assessDate;
-            studyInfo.publisher = urlLink.hostname;
+            studyInfo.publisher = studyURL.hostname;
             studyInfo.oaiLink = "https://snd.gu.se/en/oai-pmh";
         }
         else { // Dataverse cases
             studyInfo.spID = studyInfo.urlParams?.get('persistentId');
             studyInfo.fileName = studyInfo.urlParams?.get('persistentId') + "-" + studyInfo.assessDate;
             studyInfo.fileName = studyInfo.fileName.replace(/[&\/\\#,+()$~%'":*?<>{}]/g, "-");
-            studyInfo.publisher = urlLink.hostname;
-            switch (urlLink.hostname) {
+            studyInfo.publisher = studyURL.hostname;
+            switch (studyURL.hostname) {
                 case "data.aussda.at":
                     studyInfo.oaiLink = "https://data.aussda.at/oai";
                     break;
