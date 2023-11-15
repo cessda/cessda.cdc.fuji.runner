@@ -8,12 +8,12 @@ import { resultsToElastic } from './esFunctions.js';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { logger } from "./logger.js";
 
-export async function getStudiesAssess(studiesAssessFiltered: string[], hostname: string): Promise<void> {
+export async function getStudiesAssess(studiesAssessFiltered: string[], outputName: string): Promise<void> {
     //create date of testing
     const runDate = new Date();
     const assessDate = [runDate.getFullYear(), runDate.getMonth() + 1, runDate.getDate(), runDate.getHours(), runDate.getMinutes(), runDate.getSeconds()].join('-');
     //create directory for storing results per sitemap link
-    let dir: string = '../outputs/' + hostname;
+    let dir: string = '../outputs/' + outputName;
     if (!existsSync(dir))
         mkdirSync(dir, { recursive: true });
     //create logfile failed.txt for storing failed study assesses
@@ -80,7 +80,7 @@ export async function getStudiesAssess(studiesAssessFiltered: string[], hostname
         }
         //get results from EVA and FUJI API
         let [evaData, fujiData] = await Promise.allSettled([getEVAResults(studyInfo), getFUJIResults(studyInfo)]);
-        //const fujiData1: JSON | string = await getFUJIResults(studyInfo, base64UsernamePassword); //get results from FUJI API
+        //const fujiData1: JSON | string = await getFUJIResults(studyInfo, base64UsernamePassword); //get results ONLY from FUJI API
         resultsToElastic(studyInfo.fileName + "-EVA", evaData);
         resultsToHDD(dir, studyInfo.fileName + "-EVA.json", evaData);
         resultsToElastic(studyInfo.fileName + "-FUJI", fujiData);
@@ -90,5 +90,5 @@ export async function getStudiesAssess(studiesAssessFiltered: string[], hostname
         csvEVA.push(evaData); //Push EVA data to CSV writer
     }
     //parse results to CSV
-    resultsToCSV(csvFUJI, csvEVA, hostname + "_" + assessDate);
+    resultsToCSV(csvFUJI, csvEVA, outputName + "_" + assessDate);
 }

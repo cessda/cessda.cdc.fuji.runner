@@ -22,9 +22,9 @@ const file = await fsPromise.open('../inputs/sitemapsRUN.txt', 'r');
 for await (const sitemapLine of file.readLines()) {
   logger.info(`Processing sitemap: ${sitemapLine}`);
   dashLogger.info(`Processing sitemap: ${sitemapLine}, time:${new Date().toUTCString()}`);
-  const studiesAssessFiltered = await getStudiesFromSitemap(new URL(sitemapLine));
-  const hostname = new URL(sitemapLine).hostname;
-  await getStudiesAssess(studiesAssessFiltered, hostname);
+  const studiesAssessFiltered: string[] = await getStudiesFromSitemap(new URL(sitemapLine));
+  const outputName: string = new URL(sitemapLine).hostname;
+  await getStudiesAssess(studiesAssessFiltered, outputName);
   logger.info(`Finished assessing sitemap: ${sitemapLine}`);
   dashLogger.info(`Finished assessing sitemap: ${sitemapLine}, time:${new Date().toUTCString()}`);
 }
@@ -34,7 +34,7 @@ isFileEmpty('../outputs/failed.txt')
     if (isEmpty == false) {
       logger.info(`Begin assessing failed studies`);
       dashLogger.info(`Begin assessing failed studies, time:${new Date().toUTCString()}`);
-      const studiesAssessFailed = readFileSync('../outputs/failed.txt').toString().replace(/\r\n/g, '\n').split('\n');
+      const studiesAssessFailed: string[] = readFileSync('../outputs/failed.txt').toString().replace(/\r\n/g, '\n').split('\n');
       await getStudiesAssess(studiesAssessFailed, "failed");
     }
   })

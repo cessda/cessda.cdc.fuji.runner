@@ -3,7 +3,7 @@ import { dashLogger, logger } from "./logger.js";
 import { requestHeaders } from "./cdcStagingConn.js";
 
 export async function getStudiesFromSitemap(sitemapLine: URL): Promise<string[]> {
-    //prepare request for gathering all url's existing on sitemap
+    //prepare request for gathering all URL's from the sitemap
     const cdcLinks = new Sitemapper({
         url: sitemapLine.toString(),
         timeout: 5000, // 5 seconds,

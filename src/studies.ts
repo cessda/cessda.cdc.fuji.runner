@@ -16,9 +16,9 @@ await elasticIndexCheck();
 if (existsSync('../outputs/failed.txt'))
   unlinkSync('../outputs/failed.txt');
 //const file = await fsPromise.open('../inputs/studiesRUN.txt', 'r');
-const studiesAssess = readFileSync('../inputs/studiesRUN.txt').toString().replace(/\r\n/g, '\n').split('\n');
-const hostname = "StudiesAssessment";
-await getStudiesAssess(studiesAssess, hostname);
+const studiesAssess: string[] = readFileSync('../inputs/studiesRUN.txt').toString().replace(/\r\n/g, '\n').split('\n');
+const outputName: string = "StudiesAssessment";
+await getStudiesAssess(studiesAssess, outputName);
 logger.info(`Finished assessing studies`);
 dashLogger.info(`Finished assessing studies, time:${new Date().toUTCString()}`);
 //check file if any studies failed and re-assess them
@@ -27,7 +27,7 @@ isFileEmpty('../outputs/failed.txt')
     if (isEmpty == false) {
       logger.info(`Begin assessing failed studies`);
       dashLogger.info(`Begin assessing failed studies, time:${new Date().toUTCString()}`);
-      const studiesAssessFailed = readFileSync('../outputs/failed.txt').toString().replace(/\r\n/g, '\n').split('\n');
+      const studiesAssessFailed: string[] = readFileSync('../outputs/failed.txt').toString().replace(/\r\n/g, '\n').split('\n');
       await getStudiesAssess(studiesAssessFailed, "failed");
     }
   })
