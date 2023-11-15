@@ -47,14 +47,14 @@ export async function getStudiesAssess(studiesAssessFiltered: string[], outputNa
             let pathArray: string[] = studyInfo.urlPath.split('/');
             pathArray = pathArray.map(function (x) { return x.toUpperCase(); })
             studyInfo.spID = pathArray[pathArray.length - 2];
-            studyInfo.fileName = studyInfo.urlPath?.replaceAll('/', '-');
+            studyInfo.fileName = studyInfo.urlPath?.replaceAll('/', '-') + "-" + studyInfo.assessDate;
             studyInfo.publisher = urlLink.hostname;
             studyInfo.oaiLink = "https://www.adp.fdv.uni-lj.si/v0/oai";
         }
         else if (site.includes("snd.gu.se")) {
             let pathArray: string[] = studyInfo.urlPath.split('/');
             studyInfo.spID = pathArray[pathArray.length - 1]
-            studyInfo.fileName = studyInfo.urlPath?.replaceAll('/', '-');
+            studyInfo.fileName = studyInfo.urlPath?.replaceAll('/', '-') + "-" + studyInfo.assessDate;
             studyInfo.publisher = urlLink.hostname;
             studyInfo.oaiLink = "https://snd.gu.se/en/oai-pmh";
         }
