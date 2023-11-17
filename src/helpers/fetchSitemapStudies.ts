@@ -22,21 +22,10 @@ export async function getStudiesFromSitemap(sitemapLine: URL): Promise<string[]>
     // TODO: `REMOVE URL's THAT DONT CONTAIN STUDIES FOR ASSESSMENT (LIKE VALID IDENTIFIER IN URL, ETC)
     let sitemapResFiltered: string[] = [];
     switch (sitemapLine.hostname) {
+        //Dataverse Cases
         case "data.aussda.at":
-            sitemapResFiltered = sitemapRes.sites.filter((temp) => {
-                return temp.includes("persistentId");
-            });
-            break;
         case "datacatalogue.sodanet.gr":
-            sitemapResFiltered = sitemapRes.sites.filter((temp) => {
-                return temp.includes("persistentId");
-            });
-            break;
         case "ssh.datastations.nl":
-            sitemapResFiltered = sitemapRes.sites.filter((temp) => {
-                return temp.includes("persistentId");
-            });
-            break;
         case "www.sodha.be":
             sitemapResFiltered = sitemapRes.sites.filter((temp) => {
                 return temp.includes("persistentId");

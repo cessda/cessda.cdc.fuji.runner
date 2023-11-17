@@ -1,6 +1,7 @@
 import axios, { type AxiosResponse } from "axios";
 import { logger, dashLogger } from "./logger.js";
 import { writeFileSync } from "fs";
+import test from "node:test";
 
 export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string> {
   let evaResponse: AxiosResponse<any, any>;
@@ -43,7 +44,12 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
   }
   let evaObjResults: JSON | any = JSON.parse(evaResults);
   //TODO: overall FAIR score??? - console.log(JSON.stringify(evaObjResults,null,'\t'));
-  //Delete scores and logs from response that are not needed
+  evaObjResults['TotalF'] = getTotals(evaObjResults['findable']);
+  evaObjResults['TotalA'] = getTotals(evaObjResults['accessible']);
+  evaObjResults['TotalI'] = getTotals(evaObjResults['interoperable']);
+  evaObjResults['TotalR'] = getTotals(evaObjResults['reusable']);
+  //evaObjResults['TotalFAIR'] = ;
+  //Delete or Add scores and logs from response that are not needed
   evaObjResults['studyURL'] = studyInfo.url;
   evaObjResults['publisher'] = studyInfo.publisher;
   evaObjResults['dateID'] = "EVARun-" + studyInfo.assessDate;
@@ -62,4 +68,24 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
     evaObjResults['pid'] = studyInfo.urlParams?.get('persistentId');
   }
   return evaObjResults;
+}
+
+function getTotals(objTotals: JSON | any) : number{
+  let total: number = 0;
+  let result_points: number = 0;
+  let weight_of_tests: number = 0;
+  let g_weight: number = 0;
+  let g_points: number = 0;
+  Object.keys(objTotals).forEach(key => {
+    let weight: number = objTotals[key]['score']['weight']
+    weight_of_tests += weight;
+    g_weight += weight;
+    result_points += objTotals[key]['points'] * weight;
+    g_points += objTotals[key]['points'] * weight
+  });
+  //console.log("your item has points: "+(g_points / g_weight).toFixed(3));
+  total = +(result_points / weight_of_tests).toFixed(2)
+  console.log(total);
+
+  return total;
 }
