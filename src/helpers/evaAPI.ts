@@ -1,7 +1,6 @@
 import axios, { type AxiosResponse } from "axios";
 import { logger, dashLogger } from "./logger.js";
 import { writeFileSync } from "fs";
-import test from "node:test";
 
 export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string> {
   let evaResponse: AxiosResponse<any, any>;
@@ -42,7 +41,7 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
     evaResults = `Too many  request retries on EVA API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
     return evaResults; //skip study assessment
   }
-  //TODO: overall FAIR score??? - console.log(JSON.stringify(evaObjResults,null,'\t'));
+  //TODO: overall FAIR score not available in response while developing. Getting it manually - console.log(JSON.stringify(evaObjResults,null,'\t'));
   let evaObjResults: JSON | any = getTotals(JSON.parse(evaResults));
   //Delete or Add scores and logs from response that are not needed
   evaObjResults['studyURL'] = studyInfo.url;
@@ -54,7 +53,6 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
     evaObjResults['pid'] = studyInfo.cdcStudyNumber;
   }
   else if (studyInfo.url?.includes("snd.gu.se") || studyInfo.url?.includes("adp.fdv.uni-lj")) {
-    //evaObjResults['uid'] = studyInfo.urlPath?.replaceAll('/', '-') + "-" + fullDate;
     evaObjResults['uid'] = studyInfo.spID + "-" + studyInfo.assessDate;
     evaObjResults['pid'] = studyInfo.spID;
   }

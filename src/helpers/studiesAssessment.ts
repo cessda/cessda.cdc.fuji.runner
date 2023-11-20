@@ -2,7 +2,7 @@ import { Readable } from 'stream';
 import { getCDCApiInfo } from './cdcInfoAPI.js';
 import { getFUJIResults } from './fujiAPI.js';
 import { getEVAResults } from './evaAPI.js';
-import { resultsToHDD, uploadFromMemory } from './writeToFiles.js';
+import { resultsToHDD } from './writeToFiles.js';
 import { resultsToCSV } from './writeToCSV.js';
 import { resultsToElastic } from './esFunctions.js';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
@@ -19,10 +19,10 @@ export async function getStudiesAssess(studiesAssessFiltered: string[], outputNa
     //create logfile failed.txt for storing failed study assesses
     if (!existsSync('../outputs/failed.txt'))
         writeFileSync('../outputs/failed.txt', "", { flag: 'ax' });
-    //Initiating CSV writer
+    //Initiating CSV writers
     const csvFUJI = new Readable({ objectMode: true });
-    const csvEVA = new Readable({ objectMode: true });
     csvFUJI._read = () => { };
+    const csvEVA = new Readable({ objectMode: true });
     csvEVA._read = () => { };
     // Begin API Loop for studies fetched
     for (const study of studiesAssessFiltered) {
@@ -78,17 +78,20 @@ export async function getStudiesAssess(studiesAssessFiltered: string[], outputNa
                     break;
             }
         }
-        //get results from EVA and FUJI API
-        let [evaData, fujiData] = await Promise.allSettled([getEVAResults(studyInfo), getFUJIResults(studyInfo)]);
-        //const fujiData1: JSON | string = await getFUJIResults(studyInfo, base64UsernamePassword); //get results ONLY from FUJI API
+        //get simultaneously results from both EVA and FUJI API
+        let [tempEvaData, tempFujiData] = await Promise.allSettled([getEVAResults(studyInfo), getFUJIResults(studyInfo)]);
+        const evaData: string | JSON = tempEvaData.status == "fulfilled" ? tempEvaData.value : "rejected"
+        const fujiData: string | JSON = tempFujiData.status == "fulfilled" ? tempFujiData.value : "rejected"
+        //const evaData: string | JSON = await getEVAResults(studyInfo); //get results ONLY from EVA API
+        //const fujiData: string | JSON = await getFUJIResults(studyInfo); //get results ONLY from FUJI API
         resultsToElastic(studyInfo.fileName + "-EVA", evaData);
         resultsToHDD(dir, studyInfo.fileName + "-EVA.json", evaData);
         resultsToElastic(studyInfo.fileName + "-FUJI", fujiData);
         resultsToHDD(dir, studyInfo.fileName + "-FUJI.json", fujiData);
-        //uploadFromMemory(fileName, fujiResults).catch0(console.error); //Write-to-Cloud-Bucket function
-        csvFUJI.push(fujiData); //Push FUJI data to CSV writer
         csvEVA.push(evaData); //Push EVA data to CSV writer
+        csvFUJI.push(fujiData); //Push FUJI data to CSV writer
     }
     //parse results to CSV
-    resultsToCSV(csvFUJI, csvEVA, outputName + "_" + assessDate);
+    resultsToCSV(csvEVA, outputName + "_" + assessDate, "EVA");
+    resultsToCSV(csvFUJI, outputName + "_" + assessDate, "FUJI");
 }

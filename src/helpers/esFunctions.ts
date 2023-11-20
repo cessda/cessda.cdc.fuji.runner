@@ -38,7 +38,7 @@ export async function elasticIndexCheck() {
   }
 }
 
-export async function resultsToElastic(fileName: string, assessResults: PromiseSettledResult<string | JSON>) {
+export async function resultsToElastic(fileName: string, assessResults: string | JSON) {
   try {
     const elasticdoc = {
       index: 'fair-results',
