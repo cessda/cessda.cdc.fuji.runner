@@ -16,7 +16,7 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
         "metadata_service_endpoint": "",
         "metadata_service_type": "",
         "object_identifier": studyInfo.url,
-        "test_debug": false,
+        "test_debug": true,
         "use_datacite": true,
         "auth_token": base64UsernamePassword,
         "auth_token_type": "Basic"
@@ -51,7 +51,7 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
     return fujiResults; //skip study assessment
   }
   //Delete scores and logs from response that are not needed
-  delete fujiResults['results'];
+  //delete fujiResults['results']; - keep results for debug reasons
   delete fujiResults.summary.maturity;
   delete fujiResults.summary.score_earned;
   delete fujiResults.summary.score_total;

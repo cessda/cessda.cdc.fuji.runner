@@ -42,13 +42,8 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
     evaResults = `Too many  request retries on EVA API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
     return evaResults; //skip study assessment
   }
-  let evaObjResults: JSON | any = JSON.parse(evaResults);
   //TODO: overall FAIR score??? - console.log(JSON.stringify(evaObjResults,null,'\t'));
-  evaObjResults['TotalF'] = getTotals(evaObjResults['findable']);
-  evaObjResults['TotalA'] = getTotals(evaObjResults['accessible']);
-  evaObjResults['TotalI'] = getTotals(evaObjResults['interoperable']);
-  evaObjResults['TotalR'] = getTotals(evaObjResults['reusable']);
-  //evaObjResults['TotalFAIR'] = ;
+  let evaObjResults: JSON | any = getTotals(JSON.parse(evaResults));
   //Delete or Add scores and logs from response that are not needed
   evaObjResults['studyURL'] = studyInfo.url;
   evaObjResults['publisher'] = studyInfo.publisher;
@@ -70,22 +65,22 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
   return evaObjResults;
 }
 
-function getTotals(objTotals: JSON | any) : number{
-  let total: number = 0;
+function getTotals(objTotals: JSON | any) : JSON | any{
   let result_points: number = 0;
   let weight_of_tests: number = 0;
-  let g_weight: number = 0;
-  let g_points: number = 0;
   Object.keys(objTotals).forEach(key => {
-    let weight: number = objTotals[key]['score']['weight']
-    weight_of_tests += weight;
-    g_weight += weight;
-    result_points += objTotals[key]['points'] * weight;
-    g_points += objTotals[key]['points'] * weight
+    let g_weight: number = 0;
+    let g_points: number = 0;
+    for (let kk in objTotals[key]) {
+      let weight: number = objTotals[key][kk]['score']['weight']
+      weight_of_tests += weight;
+      g_weight += weight;
+      result_points += objTotals[key][kk]['points'] * weight;
+      g_points += objTotals[key][kk]['points'] * weight
+    }
+    objTotals["Total"+key] = +(g_points / g_weight).toFixed(3);
   });
-  //console.log("your item has points: "+(g_points / g_weight).toFixed(3));
-  total = +(result_points / weight_of_tests).toFixed(2)
-  console.log(total);
+  objTotals['TotalFAIR'] = +(result_points / weight_of_tests).toFixed(2);
 
-  return total;
+  return objTotals;
 }
