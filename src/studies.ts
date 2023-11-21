@@ -22,7 +22,7 @@ await getStudiesAssess(studiesAssess, outputName);
 logger.info(`Finished assessing studies`);
 dashLogger.info(`Finished assessing studies, time:${new Date().toUTCString()}`);
 //check file if any studies failed and re-assess them
-isFileEmpty('../outputs/failed.txt')
+await isFileEmpty('../outputs/failed.txt')
   .then(async (isEmpty) => {
     if (isEmpty == false) {
       logger.info(`Begin assessing failed studies`);

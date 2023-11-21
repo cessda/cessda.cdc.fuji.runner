@@ -1,10 +1,11 @@
 import axios, { type AxiosResponse } from "axios";
 import { logger, dashLogger } from "./logger.js";
-import { writeFileSync } from "fs";
+import { appendFileSync } from "fs";
 import { base64UsernamePassword } from "./cdcStagingConn.js";
 
 
 export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | string> {
+  let fujiResCode: number = 0;
   let fujiRes: AxiosResponse<any, any>;
   let fujiResults: any | string;
   let maxRetries: number = 10;
@@ -27,6 +28,7 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
         }
       });
       logger.info(`FUJI API statusCode: ${fujiRes.status}`);
+      fujiResCode = fujiRes.status;
       fujiResults = fujiRes.data;
       success = true;
     }
@@ -43,11 +45,11 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
     }
     retries++;
   }
-  if (retries >= maxRetries) {
-    logger.error(`Too many  request retries on FUJI API.`);
-    dashLogger.error(`Too many  request retries on FUJI API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
-    writeFileSync('../outputs/failed.txt', studyInfo.url! + '\n', { flag: 'ax' });
-    fujiResults = `Too many  request retries on FUJI API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
+  if ( (retries >= maxRetries) || fujiResCode!=200 ) {
+    fujiResults = `Too many  request retries or code not 200 on FUJI API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
+    logger.error(fujiResults);
+    dashLogger.error(fujiResults);
+    appendFileSync('../outputs/failed.txt', studyInfo.url! + '\n');
     return fujiResults; //skip study assessment
   }
   //Delete scores and logs from response that are not needed

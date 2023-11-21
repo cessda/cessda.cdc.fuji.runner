@@ -29,7 +29,7 @@ for await (const sitemapLine of file.readLines()) {
   dashLogger.info(`Finished assessing sitemap: ${sitemapLine}, time:${new Date().toUTCString()}`);
 }
 //check file if any studies failed and re-assess them
-isFileEmpty('../outputs/failed.txt')
+await isFileEmpty('../outputs/failed.txt')
   .then(async (isEmpty) => {
     if (isEmpty == false) {
       logger.info(`Begin assessing failed studies`);

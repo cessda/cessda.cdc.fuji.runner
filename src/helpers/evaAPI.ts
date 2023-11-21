@@ -1,8 +1,9 @@
 import axios, { type AxiosResponse } from "axios";
 import { logger, dashLogger } from "./logger.js";
-import { writeFileSync } from "fs";
+import { appendFileSync, writeFileSync } from "fs";
 
 export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string> {
+  let evaResCode: number = 0;
   let evaResponse: AxiosResponse<any, any>;
   let evaResults: any | string;
   let maxRetries: number = 10;
@@ -18,6 +19,7 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
         "repo": "oai-pmh",
       });
       logger.info(`EVA API statusCode: ${evaResponse.status}`);
+      evaResCode = evaResponse.status;
       evaResults = evaResponse.data;
       success = true;
     }
@@ -34,11 +36,11 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
     }
     retries++;
   }
-  if (retries >= maxRetries) {
-    logger.error(`Too many  request retries on EVA API.`);
-    dashLogger.error(`Too many  request retries on EVA API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
-    writeFileSync('../outputs/failed.txt', studyInfo.url! + '\n', { flag: 'ax' });
-    evaResults = `Too many  request retries on EVA API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
+  if ( (retries >= maxRetries) || evaResCode!=200 ) {
+    evaResults = `Too many  request retries or code not 200 on EVA API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
+    logger.error(evaResults);
+    dashLogger.error(evaResults);
+    appendFileSync('../outputs/failed.txt', studyInfo.url! + '\n');
     return evaResults; //skip study assessment
   }
   //TODO: overall FAIR score not available in response while developing. Getting it manually - console.log(JSON.stringify(evaObjResults,null,'\t'));
