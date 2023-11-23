@@ -28,6 +28,7 @@ await isFileEmpty('../outputs/failed.txt')
       logger.info(`Begin assessing failed studies`);
       dashLogger.info(`Begin assessing failed studies, time:${new Date().toUTCString()}`);
       const studiesAssessFailed: string[] = readFileSync('../outputs/failed.txt').toString().replace(/\r\n/g, '\n').split('\n');
+      studiesAssessFailed.pop(); //removes last (empty [/n]) element
       await getStudiesAssess(studiesAssessFailed, "failed");
     }
   })
