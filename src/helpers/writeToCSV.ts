@@ -91,12 +91,9 @@ export async function resultsToCSV(csvData: Readable, filename: string, csvType:
             'pid'
         ];
     }
-    let opts;
-    let transformOpts;
-    let json2csv;
-    opts = { fields };
-    transformOpts = { objectMode: true };
-    json2csv = new Transform(opts, transformOpts);
+    const opts = { fields };
+    const transformOpts = { objectMode: true };
+    const json2csv = new Transform(opts, transformOpts);
     let processor = csvData.pipe(json2csv).pipe(outputLocal);
     try {
         await parseAsync(processor, opts);

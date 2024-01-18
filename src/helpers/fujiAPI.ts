@@ -10,8 +10,7 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
   let fujiResults: any | string;
   let maxRetries: number = 10;
   let retries: number = 0;
-  let success: boolean = false;
-  while (retries <= maxRetries && !success) {
+  while (retries <= maxRetries) {
     try {
       fujiRes = await axios.post(process.env['FUJI_API_LOCAL']!, {
         "metadata_service_endpoint": "",
@@ -30,7 +29,7 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
       logger.info(`FUJI API statusCode: ${fujiRes.status}`);
       fujiResCode = fujiRes.status;
       fujiResults = fujiRes.data;
-      success = true;
+      break;
     }
     catch (error) {
       if (axios.isAxiosError(error)) {

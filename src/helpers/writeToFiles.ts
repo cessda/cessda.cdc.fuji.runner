@@ -36,8 +36,9 @@ export async function resultsToHDD(dir: string, fileName: string, assessResults:
       logger.error(`Error writing to file: ${err}, filename:${fileName}`);
       dashLogger.error(`Error writing to file: ${err}, filename:${fileName}, time:${new Date().toUTCString()}`);
     }
-    else
+    else {
       logger.info(`File written successfully: ${fileName}`);
+    }
   });
 }
 

@@ -15,10 +15,11 @@ export async function getCDCApiInfo(studyInfo: StudyInfo): Promise<StudyInfo> {
 
   while (retries <= maxRetries && !success) {
     try {
-      if (studyInfo.url?.includes("datacatalogue-staging.cessda.eu"))
+      if (studyInfo.url?.includes("datacatalogue-staging.cessda.eu")) {
         cdcApiRes = await axios.get(cdcStagingApiUrl, { headers: requestHeaders });
-      else
+      } else {
         cdcApiRes = await axios.get(cdcApiUrl);
+      }
       logger.info(`CDC Internal API statusCode: ${cdcApiRes.status}`);
       publisher = cdcApiRes.data.publisherFilter.publisher;
       studyNumber = cdcApiRes.data.studyNumber;

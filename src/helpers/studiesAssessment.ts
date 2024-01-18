@@ -14,8 +14,7 @@ export async function getStudiesAssess(studiesAssessFiltered: string[], outputNa
     const assessDate = [runDate.getFullYear(), runDate.getMonth() + 1, runDate.getDate(), runDate.getHours(), runDate.getMinutes(), runDate.getSeconds()].join('-');
     //create directory for storing results per sitemap link
     let dir: string = '../outputs/' + outputName;
-    if (!existsSync(dir))
-        mkdirSync(dir, { recursive: true });
+    mkdirSync(dir, { recursive: true });
     //create logfile failed.txt for storing failed study assesses
     if (!existsSync('../outputs/failed.txt'))
         writeFileSync('../outputs/failed.txt', "", { flag: 'ax' });

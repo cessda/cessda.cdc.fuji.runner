@@ -16,7 +16,7 @@ export async function getStudiesFromSitemap(sitemapLine: URL): Promise<string[]>
     catch (error) {
         logger.error(`Error at sitemapper fetch: ${error}`);
         dashLogger.error(`Error at sitemapper fetch: ${error} Sitemapper Error: ${sitemapRes?.errors}, time:${new Date().toUTCString()}`);
-        return process.exit(1);
+        process.exit(1);
     }
     logger.info(`Links Collected: ${sitemapRes.sites.length}`);
     // TODO: `REMOVE URL's THAT DONT CONTAIN STUDIES FOR ASSESSMENT (LIKE VALID IDENTIFIER IN URL, ETC)
@@ -27,20 +27,16 @@ export async function getStudiesFromSitemap(sitemapLine: URL): Promise<string[]>
         case "datacatalogue.sodanet.gr":
         case "ssh.datastations.nl":
         case "www.sodha.be":
-            sitemapResFiltered = sitemapRes.sites.filter((temp) => {
-                return temp.includes("persistentId");
-            });
+            sitemapResFiltered = sitemapRes.sites.filter(site => site.includes("persistentId"));
             break;
         case "datacatalogue.cessda.eu":
-            sitemapResFiltered = sitemapRes.sites.filter(temp => temp !== 'https://datacatalogue.cessda.eu/');
+            sitemapResFiltered = sitemapRes.sites.filter(site => site !== 'https://datacatalogue.cessda.eu/');
             break;
         case "datacatalogue-staging.cessda.eu":
-            sitemapResFiltered = sitemapRes.sites.filter(temp => temp !== 'https://datacatalogue-staging.cessda.eu/');
+            sitemapResFiltered = sitemapRes.sites.filter(site => site !== 'https://datacatalogue-staging.cessda.eu/');
             break;
         case "www.adp.fdv.uni-lj.si":
-            sitemapResFiltered = sitemapRes.sites.filter((temp) => {
-                return temp.includes("opisi");
-            });
+            sitemapResFiltered = sitemapRes.sites.filter(site => site.includes("opisi"));
             break;
         case "snd.gu.se":
             sitemapResFiltered = sitemapRes.sites;
