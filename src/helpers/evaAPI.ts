@@ -3,17 +3,16 @@ import { logger, dashLogger } from "./logger.js";
 import { appendFile } from "fs";
 import type { StudyInfo } from "../types/studyinfo.js";
 
+const maxRetries = 10;
+
 const evaEndpoint = process.env['EVA_API_LOCAL'] || "http://localhost:9090/v1.0/rda/rda_all";
 
 export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string> {
-  let evaResCode: number = 0;
   let evaResponse: AxiosResponse<any, any>;
-  let evaResults: any | string;
-  let maxRetries: number = 10;
+  let evaResults: any;
   let retries: number = 0;
-  let success: boolean = false;
   // TODO: NEED OAI + CDC IDENTIFIER IF CDC RECORD
-  while (retries <= maxRetries && !success) {
+  for (;;) {
     try {
       evaResponse = await axios.post(evaEndpoint, {
         "id": studyInfo.cdcID != null ? studyInfo.cdcID : studyInfo.spID,
@@ -22,9 +21,10 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
         "repo": "oai-pmh",
       });
       logger.info(`EVA API statusCode: ${evaResponse.status}`);
-      evaResCode = evaResponse.status;
       evaResults = evaResponse.data;
-      success = true;
+      if (evaResponse.status == 200) {
+        break;
+      }
     }
     catch (error) {
       if (axios.isAxiosError(error)) {
@@ -37,17 +37,18 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
       }
       await new Promise(resolve => setTimeout(resolve, 5000)); //delay new retry by 5sec
     }
-    retries++;
+
+    if (retries++ > maxRetries) {
+      evaResults = `Too many  request retries or code not 200 on EVA API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
+      logger.error(evaResults);
+      dashLogger.error(evaResults);
+      appendFile('../outputs/failed.txt', studyInfo.url! + '\n', () => {});
+      return evaResults; //skip study assessment
+    }
   }
-  if ( (retries >= maxRetries) || evaResCode!=200 ) {
-    evaResults = `Too many  request retries or code not 200 on EVA API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
-    logger.error(evaResults);
-    dashLogger.error(evaResults);
-    appendFile('../outputs/failed.txt', studyInfo.url! + '\n', () => {});
-    return evaResults; //skip study assessment
-  }
+  
   //TODO: overall FAIR score not available in response while developing. Getting it manually - console.log(JSON.stringify(evaObjResults,null,'\t'));
-  let evaObjResults: JSON | any = getTotals(JSON.parse(evaResults));
+  const evaObjResults = getTotals(JSON.parse(evaResults));
   //Delete or Add scores and logs from response that are not needed
   evaObjResults['studyURL'] = studyInfo.url;
   evaObjResults['publisher'] = studyInfo.publisher;
@@ -68,22 +69,22 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
   return evaObjResults;
 }
 
-function getTotals(objTotals: JSON | any) : JSON | any{
+function getTotals(objTotals: any) {
   let result_points: number = 0;
   let weight_of_tests: number = 0;
   Object.keys(objTotals).forEach(key => {
     let g_weight: number = 0;
     let g_points: number = 0;
-    for (let kk in objTotals[key]) {
-      let weight: number = objTotals[key][kk]['score']['weight']
+    for (const kk in objTotals[key]) {
+      const weight: number = objTotals[key][kk]['score']['weight'];
       weight_of_tests += weight;
       g_weight += weight;
       result_points += objTotals[key][kk]['points'] * weight;
       g_points += objTotals[key][kk]['points'] * weight
     }
-    objTotals["Total"+key] = +(g_points / g_weight).toFixed(3);
+    objTotals["Total" + key] = g_points / g_weight;
   });
-  objTotals['TotalFAIR'] = +(result_points / weight_of_tests).toFixed(2);
+  objTotals['TotalFAIR'] = result_points / weight_of_tests;
 
   return objTotals;
 }

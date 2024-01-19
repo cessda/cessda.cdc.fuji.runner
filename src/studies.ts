@@ -3,7 +3,7 @@ import { readFile, unlink } from 'fs/promises';
 import { getStudiesAssess } from './helpers/studiesAssessment.js';
 import { dashLogger, logger } from "./helpers/logger.js";
 import { elasticIndexCheck } from './helpers/esFunctions.js';
-dotenv.config({ path: '../.env' })
+dotenv.config({ path: '../.env' });
 
 //START SCRIPT EXECUTION
 logger.info('Start of Script');

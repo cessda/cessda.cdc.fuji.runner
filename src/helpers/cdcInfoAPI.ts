@@ -2,14 +2,14 @@ import axios from "axios";
 import { logger, dashLogger } from "./logger.js";
 import { requestHeaders } from "./cdcStagingConn.js";
 
-const maxRetries: number = 10;
+const maxRetries = 10;
 
 export async function getCDCApiInfo(id: string, lang: string, host: string) {
 
   const requestUrl = `https://${host}/api/json/cmmstudy_${lang}/${id}`;
 
   let retries: number = 0;
-  while (true) {
+  for (;;) {
     try {
       const cdcApiRes = await axios.get(requestUrl, { headers: requestHeaders });
 

@@ -4,16 +4,15 @@ import { appendFileSync } from "fs";
 import { base64UsernamePassword } from "./cdcStagingConn.js";
 import type { StudyInfo } from "../types/studyinfo.js";
 
+const maxRetries = 10;
 const fujiEndpoint = process.env['FUJI_API_LOCAL'] || 'http://localhost:1071/fuji/api/v1/evaluate';
 
 
 export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | string> {
-  let fujiResCode: number = 0;
   let fujiRes: AxiosResponse<any, any>;
   let fujiResults: any | string;
-  let maxRetries: number = 10;
   let retries: number = 0;
-  while (retries <= maxRetries) {
+  for (;;) {
     try {
       fujiRes = await axios.post(fujiEndpoint, {
         "metadata_service_endpoint": "",
@@ -30,30 +29,30 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
         }
       });
       logger.info(`FUJI API statusCode: ${fujiRes.status}`);
-      fujiResCode = fujiRes.status;
       fujiResults = fujiRes.data;
-      break;
-    }
-    catch (error) {
-      if (axios.isAxiosError(error)) {
+      if (fujiRes.status == 200) {
+        break;
+      }
+    } catch (error) {
+       if (axios.isAxiosError(error)) {
         logger.error(`AxiosError at FUJI API: ${error.message}, Response Status:${error.response?.status}, URL:${studyInfo.url}`);
         dashLogger.error(`AxiosError at FUJI API: ${error.message}, Response Status:${error.response?.status}, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
-      }
-      else {
+      } else {
         logger.error(`Error at FUJI API: ${error}, URL:${studyInfo.url}`);
         dashLogger.error(`Error at FUJI API: ${error}, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
       }
       await new Promise(resolve => setTimeout(resolve, 5000)); //delay new retry by 5sec
     }
-    retries++;
+
+    if (retries++ >= maxRetries) {
+      fujiResults = `Too many  request retries or code not 200 on FUJI API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
+      logger.error(fujiResults);
+      dashLogger.error(fujiResults);
+      appendFileSync('../outputs/failed.txt', studyInfo.url! + '\n');
+      return fujiResults; //skip study assessment
+    }
   }
-  if ( (retries >= maxRetries) || fujiResCode!=200 ) {
-    fujiResults = `Too many  request retries or code not 200 on FUJI API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
-    logger.error(fujiResults);
-    dashLogger.error(fujiResults);
-    appendFileSync('../outputs/failed.txt', studyInfo.url! + '\n');
-    return fujiResults; //skip study assessment
-  }
+
   //Delete scores and logs from response that are not needed
   //delete fujiResults['results']; - keep results for debug reasons
   delete fujiResults.summary.maturity;
@@ -70,11 +69,11 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
   fujiResults['publisher'] = studyInfo.publisher;
   fujiResults['dateID'] = "FujiRun-" + studyInfo.assessDate;
   // TODO: CHECK FOR OTHER SP'S URI PARAMS
-  if (studyInfo.url?.includes("datacatalogue.cessda.eu") || studyInfo.url?.includes("datacatalogue-staging.cessda.eu")) {
-    fujiResults['uid'] = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + studyInfo.assessDate;
+  if (studyInfo.url.includes("datacatalogue.cessda.eu") || studyInfo.url.includes("datacatalogue-staging.cessda.eu")) {
+    fujiResults['uid'] = studyInfo.urlParams.get('q') + "-" + studyInfo.urlParams.get('lang') + "-" + studyInfo.assessDate;
     fujiResults['pid'] = studyInfo.cdcStudyNumber;
   }
-  else if (studyInfo.url?.includes("snd.gu.se") || studyInfo.url?.includes("adp.fdv.uni-lj")) {
+  else if (studyInfo.url.includes("snd.gu.se") || studyInfo.url.includes("adp.fdv.uni-lj")) {
     fujiResults['uid'] = studyInfo.spID + "-" + studyInfo.assessDate;
     fujiResults['pid'] = studyInfo.spID;
   }
