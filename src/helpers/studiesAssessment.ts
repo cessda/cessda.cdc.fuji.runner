@@ -14,7 +14,8 @@ export async function getStudiesAssess(studiesAssessFiltered: string[], outputNa
     const runDate = new Date();
     const assessDate = [runDate.getFullYear(), runDate.getMonth() + 1, runDate.getDate(), runDate.getHours(), runDate.getMinutes(), runDate.getSeconds()].join('-');
     //create directory for storing results per sitemap link
-    await mkdir('../outputs/' + outputName, { recursive: true });
+    const dir = '../outputs/' + outputName;
+    await mkdir(dir, { recursive: true });
     //Initiating CSV writers
     const csvFUJI = new Readable({ objectMode: true });
     csvFUJI._read = () => { };
