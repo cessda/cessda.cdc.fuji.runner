@@ -6,8 +6,8 @@
 *.exe
 *.o
 *.so
-/src/*.js
-/src/*.js.map
+/src/**/*.js
+/src/**/*.js.map
 
 # Packages #
 ############
@@ -77,3 +77,6 @@ outputs/*
 ### INPUTS ###
 /inputs/sitemapsALL.txt
 /inputs/sitemapsRUN.txt
+
+## Compiled output
+

@@ -1,48 +1,49 @@
-import type { AxiosResponse } from "axios";
 import axios from "axios";
 import { logger, dashLogger } from "./logger.js";
 import { requestHeaders } from "./cdcStagingConn.js";
 
-export async function getCDCApiInfo(studyInfo: StudyInfo): Promise<StudyInfo> {
-  const cdcApiUrl = 'https://datacatalogue.cessda.eu/api/json/cmmstudy_' + studyInfo.urlParams?.get('lang') + '/' + studyInfo.urlParams?.get('q');
-  const cdcStagingApiUrl = 'https://datacatalogue-staging.cessda.eu/api/json/cmmstudy_' + studyInfo.urlParams?.get('lang') + '/' + studyInfo.urlParams?.get('q');
-  let cdcApiRes: AxiosResponse<any, any>;
-  let publisher: string = "";
-  let studyNumber: string = "";
-  let maxRetries: number = 10;
-  let retries: number = 0;
-  let success: boolean = false;
+const maxRetries: number = 10;
 
-  while (retries <= maxRetries && !success) {
+export async function getCDCApiInfo(id: string, lang: string, host: string) {
+
+  const requestUrl = `https://${host}/api/json/cmmstudy_${lang}/${id}`;
+
+  let retries: number = 0;
+  while (true) {
     try {
-      if (studyInfo.url?.includes("datacatalogue-staging.cessda.eu")) {
-        cdcApiRes = await axios.get(cdcStagingApiUrl, { headers: requestHeaders });
-      } else {
-        cdcApiRes = await axios.get(cdcApiUrl);
-      }
+      const cdcApiRes = await axios.get(requestUrl, { headers: requestHeaders });
+
       logger.info(`CDC Internal API statusCode: ${cdcApiRes.status}`);
-      publisher = cdcApiRes.data.publisherFilter.publisher;
-      studyNumber = cdcApiRes.data.studyNumber;
-      success = true;
+      let publisher: string | undefined = cdcApiRes.data.publisherFilter.publisher;
+      let studyNumber: string | undefined = cdcApiRes.data.studyNumber;
+
+      if (!publisher) {
+        publisher = "NOT-FETCHED-CDC-PUBLISHER";
+      }
+
+      if (!studyNumber) {
+        studyNumber = "NOT-FETCHED-CDC-STUDYNUMBER";
+      }
+
+      //add results to interface and return it
+      return {
+        publisher: publisher,
+        studyNumber: studyNumber,
+      };
     }
     catch (error) {
-      logger.error(`Error at CDC Internal API Fetch: ${error}`);
-      dashLogger.error(`Error at CDC Internal API Fetch: ${error}, URL:${cdcApiUrl}, time:${new Date().toUTCString()}`);
+      if (retries++ < maxRetries) {
+        logger.error(`Too many request retries on internal CDC API.`);
+        dashLogger.error(`Too many request retries on internal CDC API, URL:${requestUrl}, time:${new Date().toUTCString()}`);
+        return {
+          publisher: "NOT-FETCHED-CDC-PUBLISHER",
+          studyNumber: "NOT-FETCHED-CDC-STUDYNUMBER"
+        };
+      } else {
+        logger.error(`Error at CDC Internal API Fetch: ${error}`);
+        dashLogger.error(`Error at CDC Internal API Fetch: ${error}, URL:${requestUrl}, time:${new Date().toUTCString()}`);
+      }
       await new Promise(resolve => setTimeout(resolve, 5000)); //delay new retry by 5sec
     }
-    retries++;
   }
-  if (retries >= maxRetries) {
-    logger.error(`Too many  request retries on internal CDC API.`);
-    dashLogger.error(`Too many  request retries on internal CDC API, URL:${cdcApiUrl}, time:${new Date().toUTCString()}`);
-    if (publisher.trim().length == 0)
-      publisher = "NOT-FETCHED-CDC-PUBLISHER";
-    if (studyNumber.trim().length == 0)
-      studyNumber = "NOT-FETCHED-CDC-STUDYNUMBER";
-  }
-  //add results to interface and return it
-  studyInfo.publisher = publisher;
-  studyInfo.cdcStudyNumber = studyNumber;
-  
-  return studyInfo;
 }

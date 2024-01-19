@@ -1,6 +1,9 @@
 import axios, { type AxiosResponse } from "axios";
 import { logger, dashLogger } from "./logger.js";
-import { appendFileSync, writeFileSync } from "fs";
+import { appendFile } from "fs";
+import type { StudyInfo } from "../types/studyinfo.js";
+
+const evaEndpoint = process.env['EVA_API_LOCAL'] || "http://localhost:9090/v1.0/rda/rda_all";
 
 export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string> {
   let evaResCode: number = 0;
@@ -12,7 +15,7 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
   // TODO: NEED OAI + CDC IDENTIFIER IF CDC RECORD
   while (retries <= maxRetries && !success) {
     try {
-      evaResponse = await axios.post(process.env['EVA_API_LOCAL']!, {
+      evaResponse = await axios.post(evaEndpoint, {
         "id": studyInfo.cdcID != null ? studyInfo.cdcID : studyInfo.spID,
         "lang": "en",
         "oai_base": studyInfo.oaiLink,
@@ -40,7 +43,7 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
     evaResults = `Too many  request retries or code not 200 on EVA API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
     logger.error(evaResults);
     dashLogger.error(evaResults);
-    appendFileSync('../outputs/failed.txt', studyInfo.url! + '\n');
+    appendFile('../outputs/failed.txt', studyInfo.url! + '\n', () => {});
     return evaResults; //skip study assessment
   }
   //TODO: overall FAIR score not available in response while developing. Getting it manually - console.log(JSON.stringify(evaObjResults,null,'\t'));

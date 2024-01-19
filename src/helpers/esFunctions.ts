@@ -5,7 +5,6 @@ import { logger, dashLogger } from "./logger.js";
 const elasticsearchUrl = process.env['PASC_ELASTICSEARCH_URL'] || "http://localhost:9200/";
 const elasticsearchUsername = process.env['SEARCHKIT_ELASTICSEARCH_USERNAME'];
 const elasticsearchPassword = process.env['SEARCHKIT_ELASTICSEARCH_PASSWORD'];
-const debugEnabled = process.env['PASC_DEBUG_MODE'] === 'true';
 
 const client = elasticsearchUsername && elasticsearchPassword ? new Client({
   node: elasticsearchUrl,
@@ -14,9 +13,9 @@ const client = elasticsearchUsername && elasticsearchPassword ? new Client({
     password: elasticsearchPassword
   }
 })
-  : new Client({
+: new Client({
     node: elasticsearchUrl,
-  })
+  });
 
 
 export async function elasticIndexCheck() {
@@ -40,14 +39,13 @@ export async function elasticIndexCheck() {
 
 export async function resultsToElastic(fileName: string, assessResults: string | JSON) {
   try {
-    const elasticdoc = {
+    await client.index({
       index: 'fair-results',
       id: fileName,
       body: {
         assessResults
       }
-    }
-    await client.index(elasticdoc)
+    });
     logger.info(`inserted successfully in ES: ${fileName}`);
   }
   catch (error) {

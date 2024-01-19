@@ -2,6 +2,9 @@ import axios, { type AxiosResponse } from "axios";
 import { logger, dashLogger } from "./logger.js";
 import { appendFileSync } from "fs";
 import { base64UsernamePassword } from "./cdcStagingConn.js";
+import type { StudyInfo } from "../types/studyinfo.js";
+
+const fujiEndpoint = process.env['FUJI_API_LOCAL'] || 'http://localhost:1071/fuji/api/v1/evaluate';
 
 
 export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | string> {
@@ -12,7 +15,7 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
   let retries: number = 0;
   while (retries <= maxRetries) {
     try {
-      fujiRes = await axios.post(process.env['FUJI_API_LOCAL']!, {
+      fujiRes = await axios.post(fujiEndpoint, {
         "metadata_service_endpoint": "",
         "metadata_service_type": "",
         "object_identifier": studyInfo.url,
@@ -22,8 +25,8 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
         "auth_token_type": "Basic"
       }, {
         auth: {
-          username: process.env['FUJI_USERNAME_LOCAL']!,
-          password: process.env['FUJI_PASSWORD_LOCAL']!
+          username: process.env['FUJI_USERNAME_LOCAL'] || "marvel",
+          password: process.env['FUJI_PASSWORD_LOCAL'] || "wonderwoman"
         }
       });
       logger.info(`FUJI API statusCode: ${fujiRes.status}`);
