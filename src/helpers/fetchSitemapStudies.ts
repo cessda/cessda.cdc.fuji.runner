@@ -9,13 +9,13 @@ export async function getStudiesFromSitemap(sitemapLine: URL): Promise<string[]>
         timeout: 5000, // 5 seconds,
         requestHeaders
     });
-    let sitemapRes: SitemapperResponse | undefined;
+    let sitemapRes: SitemapperResponse;
     try {
         sitemapRes = await cdcLinks.fetch();
     }
     catch (error) {
         logger.error(`Error at sitemapper fetch: ${error}`);
-        dashLogger.error(`Error at sitemapper fetch: ${error} Sitemapper Error: ${sitemapRes?.errors}, time:${new Date().toUTCString()}`);
+        dashLogger.error(`Error at sitemapper fetch: ${error}, time:${new Date().toUTCString()}`);
         process.exit(1);
     }
     logger.info(`Links Collected: ${sitemapRes.sites.length}`);

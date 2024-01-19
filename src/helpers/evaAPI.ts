@@ -38,7 +38,7 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
       await new Promise(resolve => setTimeout(resolve, 5000)); //delay new retry by 5sec
     }
 
-    if (retries++ > maxRetries) {
+    if (retries++ >= maxRetries) {
       evaResults = `Too many  request retries or code not 200 on EVA API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
       logger.error(evaResults);
       dashLogger.error(evaResults);
