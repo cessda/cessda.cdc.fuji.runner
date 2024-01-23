@@ -35,7 +35,7 @@
     "dotenv": "^16.0.3",
     "json2csv": "^5.0.7",
     "sitemapper": "^3.1.8",
-    "winston": "^3.8.2",
+    "winston": "^3.11.0",
     "winston-daily-rotate-file": "^4.7.1"
   }
 }
