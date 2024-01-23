@@ -22,9 +22,7 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
       });
       logger.info(`EVA API statusCode: ${evaResponse.status}`);
       evaResults = evaResponse.data;
-      if (evaResponse.status == 200) {
-        break;
-      }
+      break;
     }
     catch (error) {
       if (axios.isAxiosError(error)) {
@@ -35,15 +33,16 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
         logger.error(`Error at EVA API: ${error}, URL:${studyInfo.url}`);
         dashLogger.error(`Error at EVA API: ${error}, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
       }
-      await new Promise(resolve => setTimeout(resolve, 5000)); //delay new retry by 5sec
-    }
 
-    if (retries++ >= maxRetries) {
-      evaResults = `Too many  request retries or code not 200 on EVA API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
-      logger.error(evaResults);
-      dashLogger.error(evaResults);
-      appendFile('../outputs/failed.txt', studyInfo.url! + '\n', () => {});
-      return evaResults; //skip study assessment
+      if (retries++ >= maxRetries) {
+        evaResults = `Too many  request retries or code not 200 on EVA API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
+        logger.error(evaResults);
+        dashLogger.error(evaResults);
+        appendFile('../outputs/failed.txt', studyInfo.url + '\n', () => {});
+        return evaResults; //skip study assessment
+      } else {
+        await new Promise(resolve => setTimeout(resolve, 5000)); //delay new retry by 5sec
+      }
     }
   }
   

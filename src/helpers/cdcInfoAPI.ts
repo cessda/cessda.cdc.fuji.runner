@@ -32,7 +32,10 @@ export async function getCDCApiInfo(id: string, lang: string, host: string) {
       };
     }
     catch (error) {
-      if (retries++ < maxRetries) {
+      logger.error(`Error at CDC Internal API Fetch: ${error}`);
+      dashLogger.error(`Error at CDC Internal API Fetch: ${error}, URL:${requestUrl}, time:${new Date().toUTCString()}`);
+
+      if (retries++ >= maxRetries) {
         logger.error(`Too many request retries on internal CDC API.`);
         dashLogger.error(`Too many request retries on internal CDC API, URL:${requestUrl}, time:${new Date().toUTCString()}`);
         return {
@@ -40,10 +43,8 @@ export async function getCDCApiInfo(id: string, lang: string, host: string) {
           studyNumber: "NOT-FETCHED-CDC-STUDYNUMBER"
         };
       } else {
-        logger.error(`Error at CDC Internal API Fetch: ${error}`);
-        dashLogger.error(`Error at CDC Internal API Fetch: ${error}, URL:${requestUrl}, time:${new Date().toUTCString()}`);
+        await new Promise(resolve => setTimeout(resolve, 5000)); //delay new retry by 5sec
       }
-      await new Promise(resolve => setTimeout(resolve, 5000)); //delay new retry by 5sec
     }
   }
 }

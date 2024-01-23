@@ -32,23 +32,25 @@ pipeline {
 		//
 		// No tests yet
 		//
-		// stage('Run Unit Tests') {
-		// 	agent {
-		// 		docker {
-		// 			image 'node:18'
-		// 			reuseNode true
-		// 		}
-		// 	}
-		// 	steps {
-		// 		sh "npm ci"
-		// 		sh "npm test"
-		// 	}
-		// 	post {
-		// 		always {
-		// 			junit 'junit.xml'
-		// 		}
-		// 	}
-		// }
+		stage('Run Unit Tests') {
+			agent {
+				docker {
+					image 'node:18'
+					reuseNode true
+				}
+			}
+			steps {
+				configFileProvider([configFile(fileId: 'be684558-5540-4ad6-a155-7c1b4278abc0', targetLocation: '.npmrc')]) {
+					sh "npm ci"
+				}
+				// sh "npm test"
+			}
+			// post {
+			// 	always {
+			// 		junit 'junit.xml'
+			// 	}
+			// }
+		}
 		stage('Run Sonar Scan') {
 			steps {
 				nodejs('node-18') {

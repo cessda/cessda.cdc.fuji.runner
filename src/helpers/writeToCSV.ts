@@ -1,13 +1,13 @@
 import { logger } from "./logger.js";
 import { Transform } from "json2csv";
 import { parseAsync } from "json2csv";
-import { createWriteStream } from 'fs';
+import { WriteStream, createWriteStream } from 'fs';
 import type { Readable } from "stream";
 
-export async function resultsToCSV(csvData: Readable, filename: string, csvType: string) : Promise<void> {
+export function resultsToCSV(csvData: Readable, filename: string, csvType: string) {
     csvData.push(null);
     let fields: string[] = [];
-    let outputLocal;
+    let outputLocal: WriteStream;
     if (csvType == "EVA"){
         outputLocal = createWriteStream(`../outputs/${filename}-EVA.csv`, { encoding: 'utf8' });
         fields = [
@@ -92,13 +92,8 @@ export async function resultsToCSV(csvData: Readable, filename: string, csvType:
         ];
     }
     const opts = { fields };
-    const transformOpts = { objectMode: true };
-    const json2csv = new Transform(opts, transformOpts);
-    let processor = csvData.pipe(json2csv).pipe(outputLocal);
-    try {
-        await parseAsync(processor, opts);
-    } catch (err) {
-        logger.error(`CSV writer Error: ${err}`)
-    }
+    const json2csv = new Transform(opts, { objectMode: true });
+    const processor = csvData.pipe(json2csv).pipe(outputLocal);
+    parseAsync(processor, opts).catch(err => logger.error(`CSV writer Error: ${err}`));
     //uploadFromMemory(fileName, fujiResults).catch0(console.error); //Write-to-Cloud-Bucket function
 }

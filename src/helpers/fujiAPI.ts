@@ -30,9 +30,7 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
       });
       logger.info(`FUJI API statusCode: ${fujiRes.status}`);
       fujiResults = fujiRes.data;
-      if (fujiRes.status == 200) {
-        break;
-      }
+      break;
     } catch (error) {
        if (axios.isAxiosError(error)) {
         logger.error(`AxiosError at FUJI API: ${error.message}, Response Status:${error.response?.status}, URL:${studyInfo.url}`);
@@ -41,15 +39,16 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
         logger.error(`Error at FUJI API: ${error}, URL:${studyInfo.url}`);
         dashLogger.error(`Error at FUJI API: ${error}, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
       }
-      await new Promise(resolve => setTimeout(resolve, 5000)); //delay new retry by 5sec
-    }
 
-    if (retries++ >= maxRetries) {
-      fujiResults = `Too many  request retries or code not 200 on FUJI API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
-      logger.error(fujiResults);
-      dashLogger.error(fujiResults);
-      appendFileSync('../outputs/failed.txt', studyInfo.url! + '\n');
-      return fujiResults; //skip study assessment
+      if (retries++ >= maxRetries) {
+        fujiResults = `Too many  request retries or code not 200 on FUJI API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
+        logger.error(fujiResults);
+        dashLogger.error(fujiResults);
+        appendFileSync('../outputs/failed.txt', studyInfo.url + '\n');
+        return fujiResults; //skip study assessment
+      } else {
+        await new Promise(resolve => setTimeout(resolve, 5000)); //delay new retry by 5sec
+      }
     }
   }
 
