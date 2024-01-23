@@ -32,7 +32,7 @@
     "@elastic/elasticsearch": "7.17.0",
     "@google-cloud/storage": "^7.7.0",
     "axios": "^1.6.5",
-    "dotenv": "^16.0.3",
+    "dotenv": "^16.3.2",
     "json2csv": "^5.0.7",
     "sitemapper": "^3.1.8",
     "winston": "^3.8.2",
