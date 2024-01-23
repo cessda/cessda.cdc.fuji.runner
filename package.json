@@ -17,8 +17,6 @@
   "devDependencies": {
     "@tsconfig/node18-strictest-esm": "^1.0.1",
     "@types/json2csv": "^5.0.3",
-    "@types/elasticsearch": "^5.0.40",
-    "@types/node-fetch": "^2.6.2",
     "@types/node": "^18.11.10",
     "@typescript-eslint/eslint-plugin": "^6.19.1",
     "@typescript-eslint/parser": "^6.19.1",
@@ -29,7 +27,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@elastic/elasticsearch": "7.17.0",
+    "@elastic/elasticsearch": "^7.17.0",
     "@google-cloud/storage": "^7.7.0",
     "axios": "^1.6.5",
     "dotenv": "^16.3.2",
