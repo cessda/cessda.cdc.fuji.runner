@@ -6,8 +6,8 @@
 *.exe
 *.o
 *.so
-fujiApi.js
-logger.js
+/src/**/*.js
+/src/**/*.js.map
 
 # Packages #
 ############
@@ -73,3 +73,10 @@ outputs/*
 
 ### ENV ###
 .env
+
+### INPUTS ###
+/inputs/sitemapsALL.txt
+/inputs/sitemapsRUN.txt
+
+## Compiled output
+
