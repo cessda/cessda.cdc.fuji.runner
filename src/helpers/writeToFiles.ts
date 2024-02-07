@@ -1,6 +1,6 @@
 import { Storage } from '@google-cloud/storage';
 import { writeFile } from 'fs';
-import { dashLogger, logger } from "./logger.js";
+import { logger } from "./logger.js";
 // Create a google client with explicit credentials - jsonFile
 /*const storage = new Storage({
     projectId: 'cessda-dev',
@@ -33,11 +33,10 @@ export async function uploadFromMemory(fileName: string, assessResults: Buffer) 
 export function resultsToHDD(dir: string, fileName: string, assessResults: string | JSON) {
   writeFile(`${dir}/${fileName}`, JSON.stringify(assessResults, null, 4), (err) => {
     if (err) {
-      logger.error(`Error writing to file: ${err}, filename:${fileName}`);
-      dashLogger.error(`Error writing to file: ${err}, filename:${fileName}, time:${new Date().toUTCString()}`);
+      logger.error("Error writing to file %s: %s", fileName, err);
     }
     else {
-      logger.info(`File written successfully: ${fileName}`);
+        logger.info("File written successfully: %s", fileName);
     }
   });
 }

@@ -23,106 +23,107 @@ export async function getStudiesAssess(studiesAssessFiltered: string[], outputNa
     csvEVA._read = () => { };
     // Begin API Loop for studies fetched
     for (const study of studiesAssessFiltered) {
-        logger.info(`Processing study: ${study}`);
-        const studyURL: URL = new URL(study);
-        const url = study;
-        const urlParams = studyURL.searchParams;
-        const urlPath = studyURL.pathname.substring(1);
-
-        let studyInfo: StudyInfo;
+        logger.info("Processing study: %s", study);
 
         //gather required variables, depending on SP
-        switch(studyURL.hostname) {
-            case "datacatalogue.cessda.eu":
-            case "datacatalogue-staging.cessda.eu": {
-                //get the study info from CDC Internal API
-                const temp = await getCDCApiInfo(urlParams.get('q')!, urlParams.get('lang')!, studyURL.host);
+        const studyInfo = await getStudyInfo(study, assessDate);
 
-                studyInfo = {
-                    assessDate: assessDate,
-                    cdcID: urlParams.get('q') || undefined,
-                    spID: undefined,
-                    fileName: urlParams.get('q') + "-" + urlParams.get('lang') + "-" + assessDate,
-                    cdcStudyNumber: temp.studyNumber,
-                    publisher: temp.publisher,
-                    oaiLink: study.includes("datacatalogue.cessda.eu") ? "https://datacatalogue.cessda.eu/oai-pmh/v0/oai" : "https://datacatalogue-staging.cessda.eu/oai-pmh/v0/oai",
-                    url: url,
-                    urlParams: urlParams,
-                    urlPath: urlPath,
-                }
-                break;
-            }
-            case "adp.fdv.uni-lj": {
-                let pathArray: string[] = urlPath.split('/').map( x => x.toUpperCase() );
-                studyInfo = {
-                    assessDate: assessDate,
-                    cdcID: undefined,
-                    cdcStudyNumber: undefined,
-                    spID: pathArray[pathArray.length - 2],
-                    fileName: urlPath.replaceAll('/', '-') + "-" + assessDate,
-                    publisher: studyURL.hostname,
-                    oaiLink: "https://www.adp.fdv.uni-lj.si/v0/oai",
-                    url: url,
-                    urlParams: urlParams,
-                    urlPath: urlPath,
-                }
-                break;
-            }
-            case "snd.gu.se": {
-                const pathArray = urlPath.split('/');
-                studyInfo = {
-                    spID: pathArray[pathArray.length - 1],
-                    fileName: urlPath.replaceAll('/', '-') + "-" + assessDate,
-                    publisher: studyURL.hostname,
-                    oaiLink: "https://snd.gu.se/en/oai-pmh",
-                    assessDate: assessDate,
-                    cdcID: undefined,
-                    cdcStudyNumber: undefined,
-                    url: url,
-                    urlParams: urlParams,
-                    urlPath: urlPath,
-                }
-                break;
-            }
-            default: {
-                // Dataverse cases
-                studyInfo = {
-                    spID: urlParams.get('persistentId') || undefined,
-                    fileName: (urlParams.get('persistentId') + "-" + assessDate).replace(/[&\/\\#,+()$~%'":*?<>{}]/g, "-"),
-                    publisher: studyURL.hostname,
-                    oaiLink: `https://${studyURL.host}/oai`,
-                    assessDate: assessDate,
-                    cdcID: undefined,
-                    cdcStudyNumber: undefined,
-                    url: url,
-                    urlParams: urlParams,
-                    urlPath: urlPath,
-                }
-                break;
-            }
-        }
         //get simultaneously results from both EVA and FUJI API
-        const evaPromise = getEVAResults(studyInfo);
-        evaPromise.then(evaData => {
-            exportData(dir, studyInfo.fileName + "-EVA", evaData);
+        // const evaPromise = getEVAResults(studyInfo);
+        // evaPromise.then(evaData => {
+        //     exportData(dir, studyInfo.fileName + "-EVA", evaData);
 
-            //Push EVA data to CSV writer
-            csvEVA.push(evaData);
-        });
+        //     //Push EVA data to CSV writer
+        //     csvEVA.push(evaData);
+        // }).catch(err => {
+        //     logger.error("Failed to assess %s with EVA:\n%s", studyInfo.fileName, err);
+        // });
         const fujiPromise = getFUJIResults(studyInfo);
         fujiPromise.then(fujiData => {
             exportData(dir, studyInfo.fileName + "-FUJI", fujiData);
 
             //Push FUJI data to CSV writer
             csvFUJI.push(fujiData); 
+        }).catch(err => {
+            logger.error("Failed to assess %s with FUJI:\n%s", studyInfo.fileName, err);
         });
 
         // Wait for the export to complete
-        await Promise.allSettled([evaPromise, fujiPromise]);
+        await Promise.allSettled([fujiPromise]);
     }
     //parse results to CSV
     resultsToCSV(csvEVA, outputName + "_" + assessDate, "EVA");
     resultsToCSV(csvFUJI, outputName + "_" + assessDate, "FUJI");
+}
+
+async function getStudyInfo(study: string, assessDate: string): Promise<StudyInfo> {
+    const studyURL = new URL(study);
+    const urlParams = studyURL.searchParams;
+    const urlPath = studyURL.pathname.substring(1);
+
+    switch (studyURL.hostname) {
+        case "datacatalogue.cessda.eu":
+        case "datacatalogue-staging.cessda.eu": {
+            //get the study info from CDC Internal API
+            const temp = await getCDCApiInfo(urlParams.get('q')!, urlParams.get('lang')!, studyURL.host);
+            return {
+                assessDate: assessDate,
+                cdcID: urlParams.get('q') || undefined,
+                spID: undefined,
+                fileName: urlParams.get('q') + "-" + urlParams.get('lang') + "-" + assessDate,
+                cdcStudyNumber: temp.studyNumber,
+                publisher: temp.publisher,
+                oaiLink: study.includes("datacatalogue.cessda.eu") ? "https://datacatalogue.cessda.eu/oai-pmh/v0/oai" : "https://datacatalogue-staging.cessda.eu/oai-pmh/v0/oai",
+                url: study,
+                urlParams: urlParams,
+                urlPath: urlPath,
+            };
+        }
+        case "adp.fdv.uni-lj": {
+            const pathArray: string[] = urlPath.split('/').map(x => x.toUpperCase());
+            return {
+                assessDate: assessDate,
+                cdcID: undefined,
+                cdcStudyNumber: undefined,
+                spID: pathArray[pathArray.length - 2],
+                fileName: urlPath.replaceAll('/', '-') + "-" + assessDate,
+                publisher: studyURL.hostname,
+                oaiLink: "https://www.adp.fdv.uni-lj.si/v0/oai",
+                url: study,
+                urlParams: urlParams,
+                urlPath: urlPath,
+            };
+        }
+        case "snd.gu.se": {
+            const pathArray = urlPath.split('/');
+            return {
+                spID: pathArray[pathArray.length - 1],
+                fileName: urlPath.replaceAll('/', '-') + "-" + assessDate,
+                publisher: studyURL.hostname,
+                oaiLink: "https://snd.gu.se/en/oai-pmh",
+                assessDate: assessDate,
+                cdcID: undefined,
+                cdcStudyNumber: undefined,
+                url: study,
+                urlParams: urlParams,
+                urlPath: urlPath,
+            };
+        }
+        default:
+            // Dataverse cases
+            return {
+                spID: urlParams.get('persistentId') || undefined,
+                fileName: (urlParams.get('persistentId') + "-" + assessDate).replace(/[&/\\#,+()$~%'":*?<>{}]/g, "-"),
+                publisher: studyURL.hostname,
+                oaiLink: `https://${studyURL.host}/oai`,
+                assessDate: assessDate,
+                cdcID: undefined,
+                cdcStudyNumber: undefined,
+                url: study,
+                urlParams: urlParams,
+                urlPath: urlPath,
+            };
+    }
 }
 
 function exportData(dir: string, filename: string, data: string | JSON) {

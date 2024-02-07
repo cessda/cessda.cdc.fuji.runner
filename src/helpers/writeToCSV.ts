@@ -94,6 +94,6 @@ export function resultsToCSV(csvData: Readable, filename: string, csvType: strin
     const opts = { fields };
     const json2csv = new Transform(opts, { objectMode: true });
     const processor = csvData.pipe(json2csv).pipe(outputLocal);
-    parseAsync(processor, opts).catch(err => logger.error(`CSV writer Error: ${err}`));
+    parseAsync(processor, opts).catch(err => logger.error("CSV writer Error: %s", err));
     //uploadFromMemory(fileName, fujiResults).catch0(console.error); //Write-to-Cloud-Bucket function
 }

@@ -1,5 +1,5 @@
 import axios, { type AxiosResponse } from "axios";
-import { logger, dashLogger } from "./logger.js";
+import { logger } from "./logger.js";
 import { appendFile } from "fs";
 import type { StudyInfo } from "../types/studyinfo.js";
 
@@ -26,20 +26,14 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
     }
     catch (error) {
       if (axios.isAxiosError(error)) {
-        logger.error(`AxiosError at EVA API: ${error.message}, Response Status:${error.response?.status}, URL:${studyInfo.url}`);
-        dashLogger.error(`AxiosError at EVA API: ${error.message}, Response Status:${error.response?.status}, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
-      }
-      else {
-        logger.error(`Error at EVA API: ${error}, URL:${studyInfo.url}`);
-        dashLogger.error(`Error at EVA API: ${error}, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
+        logger.error("AxiosError at EVA API: %s, URL: %s", error.message, studyInfo.url);
+      } else {
+        logger.error("Error at EVA API: %s, URL: %s", error, studyInfo.url);
       }
 
       if (retries++ >= maxRetries) {
-        evaResults = `Too many  request retries or code not 200 on EVA API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
-        logger.error(evaResults);
-        dashLogger.error(evaResults);
         appendFile('../outputs/failed.txt', studyInfo.url + '\n', () => {});
-        return evaResults; //skip study assessment
+        throw new Error(`Too many request retries or code not 200 on EVA API, URL: ${studyInfo.url}`);
       } else {
         await new Promise(resolve => setTimeout(resolve, 5000)); //delay new retry by 5sec
       }

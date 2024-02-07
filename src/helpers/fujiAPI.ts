@@ -1,5 +1,5 @@
 import axios, { type AxiosResponse } from "axios";
-import { logger, dashLogger } from "./logger.js";
+import { logger } from "./logger.js";
 import { appendFileSync } from "fs";
 import { base64UsernamePassword } from "./cdcStagingConn.js";
 import type { StudyInfo } from "../types/studyinfo.js";
@@ -28,24 +28,18 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
           password: process.env['FUJI_PASSWORD_LOCAL'] || "wonderwoman"
         }
       });
-      logger.info(`FUJI API statusCode: ${fujiRes.status}`);
       fujiResults = fujiRes.data;
       break;
     } catch (error) {
-       if (axios.isAxiosError(error)) {
-        logger.error(`AxiosError at FUJI API: ${error.message}, Response Status:${error.response?.status}, URL:${studyInfo.url}`);
-        dashLogger.error(`AxiosError at FUJI API: ${error.message}, Response Status:${error.response?.status}, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
+      if (axios.isAxiosError(error)) {
+        logger.error("AxiosError at FUJI API: %s, URL: %s", error.message, studyInfo.url);
       } else {
-        logger.error(`Error at FUJI API: ${error}, URL:${studyInfo.url}`);
-        dashLogger.error(`Error at FUJI API: ${error}, URL:${studyInfo.url}, time:${new Date().toUTCString()}`);
+        logger.error("Error at FUJI API: %s, URL: %s", (error as Error).message,  studyInfo.url);
       }
 
       if (retries++ >= maxRetries) {
-        fujiResults = `Too many  request retries or code not 200 on FUJI API, URL:${studyInfo.url}, time:${new Date().toUTCString()}`;
-        logger.error(fujiResults);
-        dashLogger.error(fujiResults);
         appendFileSync('../outputs/failed.txt', studyInfo.url + '\n');
-        return fujiResults; //skip study assessment
+        throw new Error(`Too many request retries or code not 200 on FUJI API, URL: ${studyInfo.url}`);
       } else {
         await new Promise(resolve => setTimeout(resolve, 5000)); //delay new retry by 5sec
       }

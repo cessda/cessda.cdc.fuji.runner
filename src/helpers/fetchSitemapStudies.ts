@@ -1,5 +1,4 @@
 import Sitemapper, { type SitemapperResponse } from 'sitemapper';
-import { dashLogger, logger } from "./logger.js";
 import { requestHeaders } from "./cdcStagingConn.js";
 
 export async function getStudiesFromSitemap(sitemapLine: URL): Promise<string[]> {
@@ -14,34 +13,28 @@ export async function getStudiesFromSitemap(sitemapLine: URL): Promise<string[]>
         sitemapRes = await cdcLinks.fetch();
     }
     catch (error) {
-        logger.error(`Error at sitemapper fetch: ${error}`);
-        dashLogger.error(`Error at sitemapper fetch: ${error}, time:${new Date().toUTCString()}`);
-        process.exit(1);
+        throw new SitemapError(`Error at sitemapper fetch: ${error}`, { cause: error });
     }
-    logger.info(`Links Collected: ${sitemapRes.sites.length}`);
     // TODO: `REMOVE URL's THAT DONT CONTAIN STUDIES FOR ASSESSMENT (LIKE VALID IDENTIFIER IN URL, ETC)
-    let sitemapResFiltered: string[] = [];
     switch (sitemapLine.hostname) {
         //Dataverse Cases
         case "data.aussda.at":
         case "datacatalogue.sodanet.gr":
         case "ssh.datastations.nl":
         case "www.sodha.be":
-            sitemapResFiltered = sitemapRes.sites.filter(site => site.includes("persistentId"));
-            break;
+            return sitemapRes.sites.filter(site => site.includes("persistentId"));
         case "datacatalogue.cessda.eu":
-            sitemapResFiltered = sitemapRes.sites.filter(site => site !== 'https://datacatalogue.cessda.eu/');
-            break;
+            return sitemapRes.sites.filter(site => site !== 'https://datacatalogue.cessda.eu/');
         case "datacatalogue-staging.cessda.eu":
-            sitemapResFiltered = sitemapRes.sites.filter(site => site !== 'https://datacatalogue-staging.cessda.eu/');
-            break;
+            return sitemapRes.sites.filter(site => site !== 'https://datacatalogue-staging.cessda.eu/');
         case "www.adp.fdv.uni-lj.si":
-            sitemapResFiltered = sitemapRes.sites.filter(site => site.includes("opisi"));
-            break;
+            return sitemapRes.sites.filter(site => site.includes("opisi"));
         case "snd.gu.se":
-            sitemapResFiltered = sitemapRes.sites;
-            break;
+            return sitemapRes.sites;
+        default:
+            return [];
     }
-    logger.info(`Studies to Assess: ${sitemapResFiltered.length}`);
-    return sitemapResFiltered;
+}
+
+export class SitemapError extends Error {
 }

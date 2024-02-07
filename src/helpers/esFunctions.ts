@@ -1,5 +1,5 @@
 import { Client } from '@elastic/elasticsearch';
-import { logger, dashLogger } from "./logger.js";
+import { logger } from "./logger.js";
 
 // Elasticsearch Client - Defaults to localhost if true and unspecified
 const elasticsearchUrl = process.env['PASC_ELASTICSEARCH_URL'] || "http://localhost:9200/";
@@ -46,10 +46,9 @@ export async function resultsToElastic(fileName: string, assessResults: string |
         assessResults
       }
     });
-    logger.info(`inserted successfully in ES: ${fileName}`);
+    logger.debug("inserted successfully in ES: %s", fileName);
   }
   catch (error) {
-    logger.error(`error in insert to ES: ${error}, filename:${fileName}`);
-    dashLogger.error(`error in insert to ES: ${error}, filename:${fileName}, time:${new Date().toUTCString()}`);
+    logger.error("error in insert to ES: %s, filename: %s", error, fileName);
   }
 }
