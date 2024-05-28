@@ -1,6 +1,6 @@
-[![SQAaaS badge](https://github.com/EOSC-synergy/SQAaaS/raw/master/badges/badges_150x116/badge_software_bronze.png)](https://api.eu.badgr.io/public/assertions/jIrr78_GRTaLBcjri3f1Sw "SQAaaS bronze badge achieved")
+[![SQAaaS badge](https://github.com/EOSC-synergy/SQAaaS/raw/master/badges/badges_150x116/badge_software_bronze.png)](https://api.eu.badgr.io/public/assertions/ZGwacdNhSZGWYY9xEyoQUA "SQAaaS bronze badge achieved")
 
-[![SQAaaS badge shields.io](https://img.shields.io/badge/sqaaas%20software-bronze-e6ae77)](https://api.eu.badgr.io/public/assertions/jIrr78_GRTaLBcjri3f1Sw "SQAaaS bronze badge achieved")
+[![SQAaaS badge shields.io](https://img.shields.io/badge/sqaaas%20software-bronze-e6ae77)](https://api.eu.badgr.io/public/assertions/ZGwacdNhSZGWYY9xEyoQUA "SQAaaS bronze badge achieved")
 
 [![Build Status](https://jenkins.cessda.eu/buildStatus/icon?job=cessda.cdc.fuji.runner%2Fmain)](https://jenkins.cessda.eu/job/cessda.cdc.fuji-runner/job/main/)
 [![Quality Gate Status](https://sonarqube.cessda.eu/api/project_badges/measure?project=eu.cessda.cdc%3Acdc-fuji-runner&metric=alert_status)](https://sonarqube.cessda.eu/dashboard?id=eu.cessda.cdc%3Acdc-fuji-runner)
