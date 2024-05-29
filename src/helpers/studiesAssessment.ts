@@ -1,7 +1,6 @@
 import { Readable } from 'stream';
 import { getCDCApiInfo } from './cdcInfoAPI.js';
 import { getFUJIResults } from './fujiAPI.js';
-import { getEVAResults } from './evaAPI.js';
 import { resultsToHDD } from './writeToFiles.js';
 import { resultsToCSV } from './writeToCSV.js';
 import { resultsToElastic } from './esFunctions.js';
