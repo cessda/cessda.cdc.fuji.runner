@@ -13,7 +13,7 @@ export async function getCDCApiInfo(id: string, lang: string, host: string) {
     try {
       const cdcApiRes = await axios.get(requestUrl, { headers: requestHeaders });
 
-      logger.info("CDC Internal API statusCode: %s", cdcApiRes.status);
+      logger.debug("CDC Internal API statusCode: %s", cdcApiRes.status);
       let publisher: string | undefined = cdcApiRes.data.publisherFilter.publisher;
       let studyNumber: string | undefined = cdcApiRes.data.studyNumber;
 

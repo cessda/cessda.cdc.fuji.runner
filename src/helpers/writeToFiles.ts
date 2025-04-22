@@ -36,7 +36,7 @@ export function resultsToHDD(dir: string, fileName: string, assessResults: strin
       logger.error("Error writing to file %s: %s", fileName, err);
     }
     else {
-        logger.info("File written successfully: %s", fileName);
+        logger.debug("File written successfully: %s", fileName);
     }
   });
 }
