@@ -32,7 +32,7 @@
     "axios": "^1.6.5",
     "dotenv": "^16.4.1",
     "json2csv": "^5.0.7",
-    "sitemapper": "^3.1.8",
+    "sitemapper": "^3.2.20",
     "winston": "^3.11.0",
     "winston-daily-rotate-file": "^4.7.1"
   }
