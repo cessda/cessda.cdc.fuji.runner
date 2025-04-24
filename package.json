@@ -29,7 +29,7 @@
   "dependencies": {
     "@elastic/elasticsearch": "^8.12.0",
     "@google-cloud/storage": "^7.7.0",
-    "axios": "^1.6.5",
+    "axios": "^1.8.2",
     "dotenv": "^16.4.1",
     "json2csv": "^5.0.7",
     "sitemapper": "^3.2.20",
