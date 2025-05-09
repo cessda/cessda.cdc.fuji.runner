@@ -8,7 +8,7 @@ import { mkdir } from 'fs/promises';
 import { logger } from "./logger.js";
 import type { StudyInfo } from '../types/studyinfo.js';
 
-export async function getStudiesAssess(studiesAssessFiltered: string[], outputName: string): Promise<void> {
+export async function getStudiesAssess(studiesAssessFiltered: URL[], outputName: string): Promise<void> {
     //create date of testing
     const runDate = new Date();
     const assessDate = [runDate.getFullYear(), runDate.getMonth() + 1, runDate.getDate(), runDate.getHours(), runDate.getMinutes(), runDate.getSeconds()].join('-');
@@ -55,8 +55,7 @@ export async function getStudiesAssess(studiesAssessFiltered: string[], outputNa
     resultsToCSV(csvFUJI, outputName + "_" + assessDate, "FUJI");
 }
 
-async function getStudyInfo(study: string, assessDate: string): Promise<StudyInfo> {
-    const studyURL = new URL(study);
+async function getStudyInfo(studyURL: URL, assessDate: string): Promise<StudyInfo> {
     const urlParams = studyURL.searchParams;
     const urlPath = studyURL.pathname.substring(1);
 
@@ -72,8 +71,8 @@ async function getStudyInfo(study: string, assessDate: string): Promise<StudyInf
                 fileName: urlParams.get('q') + "-" + urlParams.get('lang') + "-" + assessDate,
                 cdcStudyNumber: temp.studyNumber,
                 publisher: temp.publisher,
-                oaiLink: study.includes("datacatalogue.cessda.eu") ? "https://datacatalogue.cessda.eu/oai-pmh/v0/oai" : "https://datacatalogue-staging.cessda.eu/oai-pmh/v0/oai",
-                url: study,
+                oaiLink: studyURL.host === "datacatalogue.cessda.eu" ? "https://datacatalogue.cessda.eu/oai-pmh/v0/oai" : "https://datacatalogue-staging.cessda.eu/oai-pmh/v0/oai",
+                url: studyURL,
                 urlParams: urlParams,
                 urlPath: urlPath,
             };
@@ -88,7 +87,7 @@ async function getStudyInfo(study: string, assessDate: string): Promise<StudyInf
                 fileName: urlPath.replaceAll('/', '-') + "-" + assessDate,
                 publisher: studyURL.hostname,
                 oaiLink: "https://www.adp.fdv.uni-lj.si/v0/oai",
-                url: study,
+                url: studyURL,
                 urlParams: urlParams,
                 urlPath: urlPath,
             };
@@ -103,7 +102,7 @@ async function getStudyInfo(study: string, assessDate: string): Promise<StudyInf
                 assessDate: assessDate,
                 cdcID: undefined,
                 cdcStudyNumber: undefined,
-                url: study,
+                url: studyURL,
                 urlParams: urlParams,
                 urlPath: urlPath,
             };
@@ -118,7 +117,7 @@ async function getStudyInfo(study: string, assessDate: string): Promise<StudyInf
                 assessDate: assessDate,
                 cdcID: undefined,
                 cdcStudyNumber: undefined,
-                url: study,
+                url: studyURL,
                 urlParams: urlParams,
                 urlPath: urlPath,
             };

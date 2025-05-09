@@ -1,5 +1,5 @@
 export interface StudyInfo {
-  url: string,
+  url: URL,
   urlParams: URLSearchParams,
   urlPath: string,
   publisher: string | undefined,

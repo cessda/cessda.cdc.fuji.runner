@@ -4,7 +4,7 @@ import { parseAsync } from "json2csv";
 import { WriteStream, createWriteStream } from 'fs';
 import type { Readable } from "stream";
 
-export function resultsToCSV(csvData: Readable, filename: string, csvType: string) {
+export function resultsToCSV(csvData: Readable, filename: string, csvType: "FUJI" | "EVA" = "FUJI") {
     csvData.push(null);
     let fields: string[] = [];
     let outputLocal: WriteStream;
@@ -63,8 +63,7 @@ export function resultsToCSV(csvData: Readable, filename: string, csvType: strin
             'uid',
             'pid'
         ];
-    }
-    else{
+    } else {
         outputLocal = createWriteStream(`../outputs/${filename}-FUJI.csv`, { encoding: 'utf8' });
         fields = [
             'summary.score_percent.A',

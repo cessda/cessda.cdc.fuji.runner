@@ -19,14 +19,14 @@ try {
 }
 
 const studiesRUN = await readFile('../inputs/studiesRUN.txt');
-const studiesAssess: string[] = (studiesRUN).toString().replace(/\r\n/g, '\n').split('\n');
+const studiesAssess = (studiesRUN).toString().replace(/\r\n/g, '\n').split('\n').map(u => new URL(u));
 const outputName: string = "StudiesAssessment";
 await getStudiesAssess(studiesAssess, outputName);
 logger.info(`Finished assessing studies`);
 
 //check file if any studies failed and re-assess them
 try {
-  const studiesAssessFailed: string[] = (await readFile('../outputs/failed.txt')).toString().replace(/\r\n/g, '\n').split('\n');
+  const studiesAssessFailed = (await readFile('../outputs/failed.txt')).toString().replace(/\r\n/g, '\n').split('\n').map(u => new URL(u));
   if (studiesAssessFailed.length > 0) {
     logger.info("Begin assessing failed studies");
     studiesAssessFailed.pop(); //removes last (empty [/n]) element

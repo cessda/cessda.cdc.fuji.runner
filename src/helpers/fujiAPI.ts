@@ -5,7 +5,10 @@ import { base64UsernamePassword } from "./cdcStagingConn.js";
 import type { StudyInfo } from "../types/studyinfo.js";
 
 const maxRetries = 10;
+
 const fujiEndpoint = process.env['FUJI_API_LOCAL'] || 'http://localhost:1071/fuji/api/v1/evaluate';
+const fujiUsername = process.env['FUJI_USERNAME_LOCAL'] || "marvel";
+const fujiPassword = process.env['FUJI_PASSWORD_LOCAL'] || "wonderwoman";
 
 
 export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | string> {
@@ -24,8 +27,8 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
         "auth_token_type": "Basic"
       }, {
         auth: {
-          username: process.env['FUJI_USERNAME_LOCAL'] || "marvel",
-          password: process.env['FUJI_PASSWORD_LOCAL'] || "wonderwoman"
+          username: fujiUsername,
+          password: fujiPassword
         }
       });
       fujiResults = fujiRes.data;
@@ -62,11 +65,11 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
   fujiResults['publisher'] = studyInfo.publisher;
   fujiResults['dateID'] = "FujiRun-" + studyInfo.assessDate;
   // TODO: CHECK FOR OTHER SP'S URI PARAMS
-  if (studyInfo.url.includes("datacatalogue.cessda.eu") || studyInfo.url.includes("datacatalogue-staging.cessda.eu")) {
+  if (studyInfo.url.hostname === "datacatalogue.cessda.eu" || studyInfo.url.hostname === "datacatalogue-staging.cessda.eu") {
     fujiResults['uid'] = studyInfo.urlParams.get('q') + "-" + studyInfo.urlParams.get('lang') + "-" + studyInfo.assessDate;
     fujiResults['pid'] = studyInfo.cdcStudyNumber;
   }
-  else if (studyInfo.url.includes("snd.gu.se") || studyInfo.url.includes("adp.fdv.uni-lj")) {
+  else if (studyInfo.url.hostname === "snd.gu.se" || studyInfo.url.hostname === "adp.fdv.uni-lj") {
     fujiResults['uid'] = studyInfo.spID + "-" + studyInfo.assessDate;
     fujiResults['pid'] = studyInfo.spID;
   }

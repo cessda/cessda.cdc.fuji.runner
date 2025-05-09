@@ -47,11 +47,11 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
   evaObjResults['publisher'] = studyInfo.publisher;
   evaObjResults['dateID'] = "EVARun-" + studyInfo.assessDate;
   // TODO: CHECK FOR OTHER SP'S URI PARAMS
-  if (studyInfo.url?.includes("datacatalogue.cessda.eu") || studyInfo.url?.includes("datacatalogue-staging.cessda.eu")) {
+  if (studyInfo.url.hostname === "datacatalogue.cessda.eu" || studyInfo.url.hostname === "datacatalogue-staging.cessda.eu") {
     evaObjResults['uid'] = studyInfo.urlParams?.get('q') + "-" + studyInfo.urlParams?.get('lang') + "-" + studyInfo.assessDate;
     evaObjResults['pid'] = studyInfo.cdcStudyNumber;
   }
-  else if (studyInfo.url?.includes("snd.gu.se") || studyInfo.url?.includes("adp.fdv.uni-lj")) {
+  else if (studyInfo.url.hostname === "snd.gu.se" || studyInfo.url.hostname === "adp.fdv.uni-lj") {
     evaObjResults['uid'] = studyInfo.spID + "-" + studyInfo.assessDate;
     evaObjResults['pid'] = studyInfo.spID;
   }
@@ -62,6 +62,7 @@ export async function getEVAResults(studyInfo: StudyInfo): Promise<JSON | string
   return evaObjResults;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getTotals(objTotals: any) {
   let result_points: number = 0;
   let weight_of_tests: number = 0;

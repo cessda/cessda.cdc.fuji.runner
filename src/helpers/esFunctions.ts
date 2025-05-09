@@ -19,7 +19,7 @@ const client = elasticsearchUsername && elasticsearchPassword ? new Client({
 
 
 export async function elasticIndexCheck() {
-  const { body: exists } = await client.indices.exists({ index: 'fair-results' })
+  const exists = await client.indices.exists({ index: 'fair-results' })
   if (!exists) {
     await client.indices.create({
       index: 'fair-results',
@@ -42,7 +42,7 @@ export async function resultsToElastic(fileName: string, assessResults: string |
     await client.index({
       index: 'fair-results',
       id: fileName,
-      body: {
+      document: {
         assessResults
       }
     });
