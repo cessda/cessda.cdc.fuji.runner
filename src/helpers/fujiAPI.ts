@@ -48,7 +48,7 @@ let config = {
       break;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        logger.error("AxiosError at FUJI API: %s, URL: %s, dataToJSON: %s", error.message, studyInfo.url, error.toJSON());
+        logger.error("AxiosError at FUJI API: %s, URL: %s", error.message, studyInfo.url);
       } else {
         logger.error("Error at FUJI API: %s, URL: %s", (error as Error).message,  studyInfo.url);
       }
