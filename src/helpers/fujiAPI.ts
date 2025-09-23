@@ -1,4 +1,4 @@
-import axios, { type AxiosResponse } from "axios";
+import axios, { type AxiosRequestConfig, type AxiosResponse } from "axios";
 import { logger } from "./logger.js";
 import { appendFileSync } from "fs";
 import { base64UsernamePassword } from "./cdcStagingConn.js";
@@ -15,8 +15,8 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
   let fujiRes: AxiosResponse<any, any>;
   let fujiResults: any | string;
   let retries: number = 0;
-  //
-  let data = JSON.stringify({
+
+  const data = JSON.stringify({
   "metadata_service_endpoint": "",
   "metadata_service_type": "oai_pmh",
   "object_identifier": studyInfo.url,
@@ -27,7 +27,7 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
   "auth_token_type": "Basic"
 });
 
-let config = {
+const config: AxiosRequestConfig<string> = {
   method: 'post',
   maxBodyLength: Infinity,
   url: fujiEndpoint,
