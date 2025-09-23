@@ -22,7 +22,7 @@ export async function getStudiesFromSitemap(sitemapLine: URL): Promise<URL[]> {
             case "datacatalogue.sodanet.gr":
             case "ssh.datastations.nl":
             case "www.sodha.be":
-                return sites.filter(site => site.pathname.includes("persistentId"));
+                return sites.filter(site => site.href.includes("persistentId"));
             case "datacatalogue.cessda.eu":
             case "datacatalogue-staging.cessda.eu":
                 // Only return studies
