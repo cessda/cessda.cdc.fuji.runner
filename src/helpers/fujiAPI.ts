@@ -17,7 +17,7 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
   let retries: number = 0;
 
   const data = JSON.stringify({
-  "metadata_service_endpoint": "",
+  "metadata_service_endpoint": studyInfo.oaiLink,
   "metadata_service_type": "oai_pmh",
   "object_identifier": studyInfo.url,
   "metric_version": "metrics_v0.8",
