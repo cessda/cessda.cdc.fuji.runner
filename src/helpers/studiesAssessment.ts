@@ -63,15 +63,15 @@ async function getStudyInfo(studyURL: URL, assessDate: string): Promise<StudyInf
         case "datacatalogue.cessda.eu":
         case "datacatalogue-staging.cessda.eu": {
             //call to CDC Internal API to obtain study number & publisher
-            const cdcID = studyURL.pathname.replace(/\/+$/, "").split("/").pop()!;
-            const temp = await getCDCApiInfo(cdcID!, urlParams.get('lang')!, studyURL.host);
+            const cdcID = studyURL.pathname.match(/\/detail\/(\w+)\/?$/)?.[1];
+            const cdcAPIInfo = await getCDCApiInfo(cdcID!, urlParams.get('lang')!, studyURL.host);
             return {
                 assessDate: assessDate,
-                cdcID: cdcID || undefined,
+                cdcID: cdcID,
                 spID: undefined,
                 fileName: cdcID + "-" + urlParams.get('lang') + "-" + assessDate,
-                cdcStudyNumber: temp.studyNumber,
-                publisher: temp.publisher,
+                cdcStudyNumber: cdcAPIInfo.studyNumber,
+                publisher: cdcAPIInfo.publisher,
                 oaiLink: studyURL.host === "datacatalogue.cessda.eu" ? "https://datacatalogue.cessda.eu/oai-pmh/v0/oai" : "https://datacatalogue-staging.cessda.eu/oai-pmh/v0/oai",
                 url: studyURL,
                 urlParams: urlParams,

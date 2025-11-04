@@ -79,7 +79,7 @@ const config: AxiosRequestConfig<string> = {
   fujiResults['dateID'] = "FujiRun-" + studyInfo.assessDate;
   // TODO: CHECK FOR OTHER SP'S URI PARAMS
   if (studyInfo.url.hostname === "datacatalogue.cessda.eu" || studyInfo.url.hostname === "datacatalogue-staging.cessda.eu") {
-    fujiResults['uid'] = studyInfo.urlParams.get('q') + "-" + studyInfo.urlParams.get('lang') + "-" + studyInfo.assessDate;
+    fujiResults['uid'] = studyInfo.cdcID + "-" + studyInfo.urlParams.get('lang') + "-" + studyInfo.assessDate;
     fujiResults['pid'] = studyInfo.cdcStudyNumber;
   }
   else if (studyInfo.url.hostname === "snd.gu.se" || studyInfo.url.hostname === "adp.fdv.uni-lj") {
