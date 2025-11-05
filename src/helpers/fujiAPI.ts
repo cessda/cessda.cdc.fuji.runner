@@ -17,7 +17,7 @@ export async function getFUJIResults(studyInfo: StudyInfo): Promise<JSON | strin
   let retries: number = 0;
 
   const data = JSON.stringify({
-  "metadata_service_endpoint": "",
+  "metadata_service_endpoint": studyInfo.oaiLink,
   "metadata_service_type": "oai_pmh",
   "object_identifier": studyInfo.url,
   "metric_version": "metrics_v0.8",
@@ -79,7 +79,7 @@ const config: AxiosRequestConfig<string> = {
   fujiResults['dateID'] = "FujiRun-" + studyInfo.assessDate;
   // TODO: CHECK FOR OTHER SP'S URI PARAMS
   if (studyInfo.url.hostname === "datacatalogue.cessda.eu" || studyInfo.url.hostname === "datacatalogue-staging.cessda.eu") {
-    fujiResults['uid'] = studyInfo.urlParams.get('q') + "-" + studyInfo.urlParams.get('lang') + "-" + studyInfo.assessDate;
+    fujiResults['uid'] = studyInfo.cdcID + "-" + studyInfo.urlParams.get('lang') + "-" + studyInfo.assessDate;
     fujiResults['pid'] = studyInfo.cdcStudyNumber;
   }
   else if (studyInfo.url.hostname === "snd.gu.se" || studyInfo.url.hostname === "adp.fdv.uni-lj") {

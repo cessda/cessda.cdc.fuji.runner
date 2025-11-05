@@ -20,13 +20,14 @@ export async function getStudiesFromSitemap(sitemapLine: URL): Promise<URL[]> {
             //Dataverse Cases
             case "data.aussda.at":
             case "datacatalogue.sodanet.gr":
+            case "staging-datacatalogue.sodanet.gr":
             case "ssh.datastations.nl":
             case "www.sodha.be":
                 return sites.filter(site => site.href.includes("persistentId"));
             case "datacatalogue.cessda.eu":
             case "datacatalogue-staging.cessda.eu":
                 // Only return studies
-                return sites.filter(site => site.pathname === '/detail');
+                return sites.filter(site => site.href.includes("detail"));
             case "www.adp.fdv.uni-lj.si":
                 return sites.filter(site => site.pathname.includes("opisi"));
             case "snd.gu.se":

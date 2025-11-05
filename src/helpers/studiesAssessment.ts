@@ -18,8 +18,8 @@ export async function getStudiesAssess(studiesAssessFiltered: URL[], outputName:
     //Initiating CSV writers
     const csvFUJI = new Readable({ objectMode: true });
     csvFUJI._read = () => { };
-    const csvEVA = new Readable({ objectMode: true });
-    csvEVA._read = () => { };
+    //const csvEVA = new Readable({ objectMode: true });
+    //csvEVA._read = () => { };
     // Begin API Loop for studies fetched
     for (const study of studiesAssessFiltered) {
         logger.info("Processing study: %s", study);
@@ -51,7 +51,7 @@ export async function getStudiesAssess(studiesAssessFiltered: URL[], outputName:
         await Promise.allSettled([fujiPromise]);
     }
     //parse results to CSV
-    resultsToCSV(csvEVA, outputName + "_" + assessDate, "EVA");
+    //resultsToCSV(csvEVA, outputName + "_" + assessDate, "EVA");
     resultsToCSV(csvFUJI, outputName + "_" + assessDate, "FUJI");
 }
 
@@ -62,15 +62,16 @@ async function getStudyInfo(studyURL: URL, assessDate: string): Promise<StudyInf
     switch (studyURL.hostname) {
         case "datacatalogue.cessda.eu":
         case "datacatalogue-staging.cessda.eu": {
-            //get the study info from CDC Internal API
-            const temp = await getCDCApiInfo(urlParams.get('q')!, urlParams.get('lang')!, studyURL.host);
+            //call to CDC Internal API to obtain study number & publisher
+            const cdcID = studyURL.pathname.match(/\/detail\/(\w+)\/?$/)?.[1];
+            const cdcAPIInfo = await getCDCApiInfo(cdcID!, urlParams.get('lang')!, studyURL.host);
             return {
                 assessDate: assessDate,
-                cdcID: urlParams.get('q') || undefined,
+                cdcID: cdcID,
                 spID: undefined,
-                fileName: urlParams.get('q') + "-" + urlParams.get('lang') + "-" + assessDate,
-                cdcStudyNumber: temp.studyNumber,
-                publisher: temp.publisher,
+                fileName: cdcID + "-" + urlParams.get('lang') + "-" + assessDate,
+                cdcStudyNumber: cdcAPIInfo.studyNumber,
+                publisher: cdcAPIInfo.publisher,
                 oaiLink: studyURL.host === "datacatalogue.cessda.eu" ? "https://datacatalogue.cessda.eu/oai-pmh/v0/oai" : "https://datacatalogue-staging.cessda.eu/oai-pmh/v0/oai",
                 url: studyURL,
                 urlParams: urlParams,
